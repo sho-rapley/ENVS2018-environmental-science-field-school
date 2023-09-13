@@ -1,0 +1,100 @@
+---
+title: "ENVS2018 Environmental Science Field School: Kioloa analyses"
+author: "Shoshana Rapley, Belinda Wilson"
+date: "13 September 2023"
+output:
+  html_document:
+    toc: true
+    number_sections: true
+    toc_depth: 3
+    toc_float:
+      collapsed: true
+    theme: cerulean
+    highlight: pygments
+editor_options: 
+  chunk_output_type: console
+knit: (function(inputFile, encoding) { rmarkdown::render(inputFile, encoding = encoding, output_file = file.path(dirname(inputFile), 'tutorial.html')) })
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(warning=FALSE, message=FALSE)
+```
+
+# **Background**
+
+For the Kioloa week the reports will focus on biodiversity. In particular, you should examine the composition and structure of different plant communities at Kioloa, whether animal communities also differ, and how these patterns relate to the underlying soils and geology.
+
+The reports must use our field collected data. We will work together to collect and summarise the data during the field trip and will share the summarised data so that all students are working with the same information. We do not ask you to conduct any additional statistical analyses. Rather, the task is to describe and patterns in the data that we have shared and indicate what processes have influenced the development of these patterns.
+
+# **Setup**
+
+First, we installed the [pacman Package Management Tool](https://cran.r-project.org/web/packages/pacman/index.html), which allows us to install and load subsequent packages in a condensed and efficient way.
+
+```{r, eval=FALSE}
+#install.packages(pacman)
+```
+
+```{r}
+# Install and load required packages
+pacman::p_load(dplyr, ggplot2, janitor, lme4, lubridate, 
+               rstudioapi, readxl, tidyr, tidyverse)
+```
+
+We also set the working directly to where this R markdown is saved using the `rstudioapi` package.
+
+```{r}
+# Set the working directory to where this markdown is saved
+setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+```
+
+# **Data preparation**
+
+Reading in data.
+
+```{r}
+
+```
+
+# **Vegetation communities**
+
+Based on biometric tool.
+
+```{r}
+
+```
+
+# **Bird surveys**
+
+```{r}
+
+```
+
+# **Remote camera traps**
+
+```{r}
+
+```
+
+# **Acoustic meters**
+
+```{r}
+
+```
+
+# **Frog surveys**
+
+```{r}
+
+```
+
+# **Footprint tunnels (optional)**
+
+```{r}
+
+```
+
+# **Session information**
+
+```{r}
+# Display version information for R, OS, and packages
+sessionInfo()
+```
