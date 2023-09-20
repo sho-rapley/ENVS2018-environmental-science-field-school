@@ -21,13 +21,15 @@ knitr::opts_chunk$set(warning=FALSE, message=FALSE)
 
 # **Background**
 
-For the Kioloa week the reports will focus on biodiversity. In particular, you should examine the composition and structure of different plant communities at Kioloa, whether animal communities also differ, and how these patterns relate to the underlying soils and geology.
+For the Kioloa week the report will focus on biodiversity. In particular, you should examine the composition and structure of different plant communities at Kioloa, whether animal communities also differ, and how these patterns relate to the underlying soils and geology.
 
 The reports must use our field collected data. We will work together to collect and summarise the data during the field trip and will share the summarised data so that all students are working with the same information. We do not ask you to conduct any additional statistical analyses. Rather, the task is to describe and patterns in the data that we have shared and indicate what processes have influenced the development of these patterns.
 
 # **Setup**
 
-First, we installed the [pacman Package Management Tool](https://cran.r-project.org/web/packages/pacman/index.html), which allows us to install and load subsequent packages in a condensed and efficient way.
+This document is called a 'markdown'. It's a way to share code, annotations and results all in one place, how good! For those of you interested in coding, we will include some notes on how we produced the results. Notes in the code itself that start with a hash and are in green font explain what the next line of code achieves.  
+
+Code note: First, we installed the [pacman Package Management Tool](https://cran.r-project.org/web/packages/pacman/index.html), which allows us to install and load subsequent packages in a condensed and efficient way.
 
 ```{r, eval=FALSE}
 #install.packages(pacman)
@@ -35,68 +37,353 @@ First, we installed the [pacman Package Management Tool](https://cran.r-project.
 
 ```{r}
 # Install and load required packages
-pacman::p_load(dplyr, ggplot2, janitor, lme4, lubridate, 
-               rstudioapi, readxl, tidyr, tidyverse)
+pacman::p_load(dplyr, ggplot2, gt, janitor, lme4, lubridate, 
+               rstudioapi, readxl, sjmisc, tidyr, tidyverse)
 ```
 
-We also set the working directly to where this R markdown is saved using the `rstudioapi` package.
+Code note: We also set the working directly to where this R markdown is saved using the `rstudioapi` package.
 
 ```{r}
 # Set the working directory to where this markdown is saved
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 ```
 
-# **Data preparation**
+# **Vegetation communities**
 
-Reading in data.
+We collected vegetation data using the biometric tool. This included compositional elements (e.g. overstory trees) and functional elements (e.g. woody debris). 
+
+Let's start by looking at a matrix of the floral composition. 
+
+The species composition table has each site as a row, and each column is a plant species. The number 1 means the species was present in the composition survey. In some cases the plant species have been organised into groups that are similar, as follows.
+•	Block 1 are trees species that occupy the overstorey
+•	Block 2 are mid storey species that are recognised as favouring rainforest vegetation (according to https://plantnet.rbgsyd.nsw.gov.au/)
+•	Block 3 are species in the genus Acacia, which occur in the mid storey
+•	Block 4 are ferns
+•	Block 5 are grasses
+•	Block 6 are plants in the family Cyperaceae, which we call “true sedges”. Lomandra longifolia is sometimes grouped with the sedges but is actually a different plant family
+The other species (in grey) are not blocked, but plants in the same genus are put next to each other.
+
+Note that as you progress down the rows of the table you have species that are not blocked with similar species, and which are found in relatively few sites. Therefore they are less useful in interpreting the similarities and differences in composition of the plant communities.
+
+I have not put the paddock sites (P1, P2, P3, P4) into the species composition table because we did not survey them this year. However, you could see that they had little or no tree cover (ie only scattered Eucalyptus tereticornis) no mid storey shrubs, and a ground layer dominated by grasses including introduced species that have been sown for livestock grazing.
+
 
 ```{r}
+# read in the data 
+comp_data <- read_excel("data/ENVS2018 kioloa flora composition 2023.xlsx", sheet = 2)
+
+#determine colour palette
+viridisLite::viridis(n=7, alpha=.8)
+
+# create a pretty table using the package 'gt'
+comp_table <- gt(comp_data) %>%
+  # change font size
+  tab_style(style = cell_text(size = px(12)), locations = cells_body()) %>%
+  # add header
+  tab_header(title = "Floral composition", 
+             subtitle = "ENVS2018 Student data Kioloa 2023") %>%
+  # replace NAs with blanks
+  tab_style(cell_text(style = "italic"),locations = cells_body(columns = 2)) %>%
+  sub_missing(missing_text = " ") %>%
+  # add row colours for plant type (using a 7 colour viridis scale)
+  tab_style(style = list(cell_fill(color = "#440154CC"), cell_text(color = "white")),
+    locations = cells_body(columns = 1:2, rows = 1:7)) %>%
+  tab_style(style = list(cell_fill(color = "#443A83CC"), cell_text(color = "white")),
+    locations = cells_body(columns = 1:2, rows = 8:13)) %>%  
+  tab_style(style = list(cell_fill(color = "#31688ECC"), cell_text(color = "white")),
+    locations = cells_body(columns = 1:2, rows = 14:20)) %>%
+  tab_style(style = list(cell_fill(color = "#21908CCC"), cell_text(color = "white")),
+    locations = cells_body(columns = 1:2, rows = 21:24)) %>%
+  tab_style(style = list(cell_fill(color = "#35B779CC")),
+    locations = cells_body(columns = 1:2, rows = 25:33)) %>%
+  tab_style(style = list(cell_fill(color = "#8FD744CC")),
+    locations = cells_body(columns = 1:2, rows = 34:39)) %>%
+  tab_style(style = list(cell_fill(color = "#EAEAEA")),
+    locations = cells_body(columns = 1:2, rows = 40:80)) %>%
+  # change tally colour
+  tab_style(style = list(cell_fill(color = "lightgrey")),
+    locations = cells_body(columns = 23))
+
+comp_table
 
 ```
 
-# **Vegetation communities**
+Great. What you can see here is the distribution of plant types (i.e. overstory, midstory, rainforest loving, sedge) across the sites. 
 
-Based on biometric tool.
+The labels OG, RG, RF, P and C were assigned without a detailed analysis of the composition of the plant communities and should not be used as an assumed grouping of sites into communities. Instead I have suggested a grouping of sites in terms of similarity in plant species composition, below.
+•	OG10, OG5, OG7, OG9 and RF1 have *Corymbia maculata* and *Eucalyptus pilularis* in the overstory, and Acacia species in the midstorey. There are ferns in the ground layer, but only one species of Cyperaceae. Some ‘rainforest loving’ species are also found here. For this report we can call these sites **“Upper slope eucalypt forest”**
+•	RF2, RF3, and RF4 have *Backhousia myrtifolia* in the midstorey, plus a few other rainforest loving species. All sites have ferns. Shrubs in the Notelaea are absent. RF2 is a bit more similar to the Upper slope eucalypt forest, noting it has some grass and *Gahnia melanocarpa*, which RF3 and RF4 do not. For this report we can call these sites **“Moist gully rainforest”**
+•	RG1, RG2, RG3, RG4, RG8, RG10 have *Corymbia maculata* in the overstory, but no *Eucalyptus botryoides* or *Casuarina glauca*. All have Acacia mid story and Cyperaceae in the ground layer. Most sites don’t have ferns, and none have Livistona palms or rainforest-loving species. For this report we can call them these sites **“Lower slope eucalypt forest”**
+•	C1, C2, RG2, and OG1 have *Corymbia maculata* and *Eucalyptus botryoides* in the canopy. They have Acacia species in the mid layer. Although they occur toward the coast, they do not have *Casuarina glauca*. For this report we can call it **“Coastal eucalypt forest”**
+•	C3, C4, and C5 have a canopy of *Casuarina glauca*. There are no Acacia in the mid story or ferns in the ground layer. Two of these sites have the palm, *Livistona australis*. Species moderately common in other sites but missing from here include Hibbertia species, Dodonaea species and *Synoum glandulosum*. For this report we can call these sites **“Coastal Casuarina forest”**
+
+Let's highlight the groupings and add headers to make these communities easier to see.
 
 ```{r}
+#determine colour palette
+viridisLite::viridis(n=6, alpha=.2)
+
+comp_table2 <- comp_table %>%
+  # add column colours for community type (using a 7 colour viridis scale with transparency)
+  tab_style(style = list(cell_fill(color = "#44015433")),
+    locations = cells_body(columns = 3:7)) %>%
+  tab_style(style = list(cell_fill(color = "#41448733")),
+    locations = cells_body(columns = 8)) %>%  
+  tab_style(style = list(cell_fill(color = "#2A788E33")),
+    locations = cells_body(columns = 9:10)) %>%
+  tab_style(style = list(cell_fill(color = "#22A88433")),
+    locations = cells_body(columns = 11:15)) %>%
+  tab_style(style = list(cell_fill(color = "#7AD15133")),
+    locations = cells_body(columns = 16:19)) %>%
+  tab_style(style = list(cell_fill(color = "#FDE72533")),
+    locations = cells_body(columns = 20:22)) %>%
+  # add new community grouping names
+  tab_spanner(label = "Upper slope eucalypt forest", columns = 3:7) %>%
+  tab_spanner(label = "Moist gully rainforest", columns = 8:10) %>%
+  tab_spanner(label = "Lower slope eucalypt forest", columns = 11:15) %>%
+  tab_spanner(label = "Coastal eucalypt forest", columns = 16:19) %>%
+  tab_spanner(label = "Coastal Casuarina forest", columns = 20:22)
+
+comp_table2
+
+```
+
+Excellent! Now that we have our groupings, let's take a look at the biometric data you collected. Note: paddock data is derived from 2022 (since you didn't collect it this year).
+
+```{r}
+# read in data
+biometric_data <- read_excel("data/ENVS2018 kioloa biometric 2023.xlsx", sheet = 2)
+
+# make table in gt
+biometric_table <- gt(biometric_data) %>%
+  # change font size
+  tab_style(style = cell_text(size = px(12)), locations = cells_body(!2)) %>%
+  # add header
+  tab_header(title = "Biometric data", 
+             subtitle = "ENVS2018 Student data Kioloa 2023") %>%
+  # add source footnote
+  tab_source_note(source_note = md("Note: paddock data derived from 2022")) %>%
+  # format percentages to display %
+  fmt_percent(columns = 3:13, decimals = 1) %>%
+  # add data grouping labels
+  tab_spanner(label = "Percent cover", columns = 3:13) %>%
+  tab_spanner(label = "Feature counts", columns = 14:16) %>%
+  # add row colours for community type (using a 7 colour viridis scale with transparency)
+  tab_style(style = list(cell_fill(color = "#44015433")),
+    locations = cells_body(rows = 1:5, columns = 1:2)) %>%
+  tab_style(style = list(cell_fill(color = "#41448733")),
+    locations = cells_body(rows = 6, columns = 1:2)) %>%  
+  tab_style(style = list(cell_fill(color = "#2A788E33")),
+    locations = cells_body(rows = 7:8, columns = 1:2)) %>%
+  tab_style(style = list(cell_fill(color = "#22A88433")),
+    locations = cells_body(rows = 9:13, columns = 1:2)) %>%
+  tab_style(style = list(cell_fill(color = "#7AD15133")),
+    locations = cells_body(rows = 14:17, columns = 1:2)) %>%
+  tab_style(style = list(cell_fill(color = "#FDE72533")),
+    locations = cells_body(rows = 18:20, columns = 1:2)) %>%
+  tab_style(style = list(cell_fill(color = "#EAEAEA")),
+    locations = cells_body(rows = 21:24, columns = 1:2))
+
+biometric_table
+
+```
+
+Great. There are some patterns in the communities. Let's highlight cells for a few key variables based on their values to make it easier to see what's going on. 
+
+```{r}
+biometric_table2 <- biometric_table %>%
+  # colour columns according to values
+  # Grass > 40%
+   tab_style(cell_fill(color = "#F9E3D6"),
+    locations = cells_body(columns = Grass, rows = Grass > .4)) %>%
+   tab_style(cell_fill(color = "#F2F2F2"),
+    locations = cells_body(columns = Grass, rows = Grass < .4)) %>%
+  # Leaf litter > 30%
+   tab_style(cell_fill(color = "#F9E3D6"),
+    locations = cells_body(columns = Litter, rows = Litter > .3)) %>%
+   tab_style(cell_fill(color = "#F2F2F2"),
+    locations = cells_body(columns = Litter, rows = Litter < .3)) %>%
+  # Midstory > 15%
+   tab_style(cell_fill(color = "#F9E3D6"),
+    locations = cells_body(columns = Midstory, rows = Midstory > .15)) %>%
+   tab_style(cell_fill(color = "#F2F2F2"),
+    locations = cells_body(columns = Midstory, rows = Midstory < .15)) %>%
+  # Midstory + over > 60%
+   tab_style(cell_fill(color = "#F9E3D6"),
+    locations = cells_body(columns = Cover, rows = Cover > .6)) %>%
+   tab_style(cell_fill(color = "#F2F2F2"),
+    locations = cells_body(columns = Cover, rows = Cover < .6)) %>%
+  # CWD length > 100m 
+   tab_style(cell_fill(color = "#F9E3D6"),
+    locations = cells_body(columns = CWD, rows = CWD > 100)) %>%
+   tab_style(cell_fill(color = "#F2F2F2"),
+    locations = cells_body(columns = CWD, rows = CWD < 100)) %>%
+  # add footnotes for the above
+    tab_footnote(footnote = "Highlighted grass cover > 40%",
+    locations = cells_column_labels(columns = Grass)) %>%
+    tab_footnote(footnote = "Highlighted leaf litter > 30%",
+    locations = cells_column_labels(columns = Litter)) %>%
+    tab_footnote(footnote = "Highlighted midstory cover > 15%",
+    locations = cells_column_labels(columns = Midstory)) %>%
+    tab_footnote(footnote = "Highlighted combined mid and overstory cover > 60%; note percentage can be over 100%",
+    locations = cells_column_labels(columns = Cover)) %>%
+    tab_footnote(footnote = "Highlighted coarse woody debris where the total length > 100m",
+    locations = cells_column_labels(columns = CWD))
+
+
+biometric_table2
+
+```
+
+Nice. That's given us a good overview of how the biometric features vary by community type. Let's now summarise and visualise the data as boxplots. A boxplot shows the mean(middle line of the box), quartiles (the box and whiskers) and outliers (dots) and are useful for comparing quantitative data among groups. 
+
+```{r}
+  # remove white spaces in names so can work easily in ggplot
+biometric_data2 <- clean_names(biometric_data) %>%
+  # convert percentages to 0-100
+  mutate(across(3:13, ~ .x * 100)) %>%
+  # order the factors (by apperance) to match the table colour palette
+  mutate(community = as_factor(community))
+
+# break into ground cover data and convert to long format for graphing
+cover <- select(biometric_data2, -c(11:16)) %>%
+  pivot_longer(cols = 3:10, names_to = "feature", values_to = "percent") %>%
+  mutate(feature = as_factor(feature))
+
+# create box plot for cover
+ggplot(cover) +
+  geom_boxplot(aes(community, percent, fill = community)) +
+  scale_fill_viridis_d() +
+  facet_wrap(~feature) +
+  theme_classic() +
+  theme(axis.text.x=element_blank())
+
+```
+
+Good. We can see there are consistently low values for cryptogam, rock and bare ground, so let's remove those to make the others easier to read. 
+
+```{r}
+cover2 <- cover %>% 
+  filter(feature %in% c("cover", "forb", "grass", "litter", "low_shrub"))
+
+# create box plot for cover
+ggplot(cover2) +
+  geom_boxplot(aes(community, percent, fill = community)) +
+  scale_fill_viridis_d() +
+  facet_wrap(~feature) +
+  theme_classic() +
+  theme(axis.text.x=element_blank())
+
+```
+
+Now let's look at the mid and overstory cover, plus the combined mid and overstory (called in the plot 'cover'). This gives us an indication of how much light will get through to the floor. 
+
+```{r}
+# break into tree cover data and convert to long format for graphing
+tree <- select(biometric_data2, -c(3:10, 14:16)) %>%
+  pivot_longer(cols = 3:5, names_to = "feature", values_to = "percent") %>%
+  mutate(feature = as_factor(feature))
+
+# create box plot for cover
+ggplot(tree) +
+  geom_boxplot(aes(community, percent, fill = community)) +
+  scale_fill_viridis_d() +
+  facet_wrap(~feature) +
+  theme_classic() +
+  theme(axis.text.x=element_blank())
+
+```
+
+Now let's look at the count data: trees, trees with hollows and length of CWD.
+
+```{r}
+# break into cover data and convert to long format for graphing
+count <- select(biometric_data2, -c(3:13)) %>%
+  pivot_longer(cols = 3:5, names_to = "feature", values_to = "count") %>%
+  mutate(feature = as_factor(feature))
+
+# create box plot for count
+ggplot(count) +
+  geom_boxplot(aes(community, count, fill = community)) +
+  scale_fill_viridis_d() +
+  facet_wrap(~feature) +
+  theme_classic() +
+  theme(axis.text.x=element_blank())
+
+```
+
+And we'll calculate the following summary statistics for all features: mean and standard deviation.
+
+```{r}
+summary_stats <- biometric_data %>% clean_names() %>%
+  pivot_longer(cols = 3:16, names_to = "feature", values_to = "value") %>%
+  group_by(community, feature) %>%
+  summarise(mean = mean(value),
+            sd = sd(value)) %>%
+  pivot_wider(names_from = 2, values_from = 3:4) %>%
+  sjmisc::rotate_df(cn=TRUE) %>% slice(-1) %>%
+  rownames_to_column() %>%
+  rename("Stat" = 1) %>%
+  separate_wider_delim(Stat, "_", names = c("Stat", "Variable"),
+                       too_many = "merge") %>%
+  arrange(Variable) %>%
+  mutate_at(c(3:8), as.numeric)
+
+summary_stats_table <- gt(summary_stats) %>%
+  # change font size
+  tab_style(style = cell_text(size = px(12)), locations = cells_body(!1)) %>%
+  # add header
+  tab_header(title = "Biometric data summary statistics", 
+             subtitle = "ENVS2018 Student data Kioloa 2023") %>%
+  # add source footnote
+  tab_source_note(source_note = md("Note: paddock data derived from 2022")) %>%
+  # drop trailing zeros
+  fmt_number(drop_trailing_zeros = TRUE) %>%
+  # format percentages to display %
+  fmt_percent(rows = c(1,3,5,9,11,15,17,19,21,23,25), decimals = 1) %>%
+    # add column colours
+  tab_style(style = cell_fill(color = "#44015433"),
+    locations = cells_body(columns = 8)) %>%
+  tab_style(style = cell_fill(color = "#41448733"),
+    locations = cells_body(columns = 6)) %>%
+  tab_style(style = cell_fill(color = "#22A88433"),
+    locations = cells_body(columns = 4)) %>%  
+  tab_style(style = cell_fill(color = "#7AD15133"),
+    locations = cells_body(columns = 5)) %>%  
+  tab_style(style = cell_fill(color = "#FDE72533"),
+    locations = cells_body(columns = 3)) %>%
+  tab_style(style = cell_fill(color = "#EAEAEA"),
+    locations = cells_body(columns = 7)) %>%
+  # arrange columsn per other tables
+  cols_move(columns = 8, after = 2) %>%
+  cols_move(columns = 6, after = 3) %>%
+  cols_move(columns = 5, after = 4) %>%
+  cols_move(columns = 3, after = 7) %>%
+  cols_move(columns = 4, after = 6) %>%
+  cols_move_to_end(Paddock)
+
+summary_stats_table
 
 ```
 
 # **Bird surveys**
 
+We conducted expert bird surveys of all the plots. The observer recorded all birds seen and heard in a five-minute period in the following distance categories: <25m, 25-50m, 50-100m, 100+m and  overhead. We also asked you to estimate how many species you could identify during the survey. 
+
+Let's start by visualising and summarising the data to get our heads around it. 
+
 ```{r}
+# read in the data and clean names 
+birds_expert <- read_excel("data/ENVS2018 kioloa bird data 2023.xlsx", sheet = 1) %>%
+  clean_names()
+
+birds_student <- read_excel("data/ENVS2018 kioloa bird data 2023.xlsx", sheet = 4) %>%
+  clean_names()
+
+
 
 ```
 
-# **Remote camera traps**
-
-```{r}
-
-```
-
-# **Acoustic meters**
-
-```{r}
-
-```
-
-# **Frog surveys**
-
-```{r}
-
-```
-
-# **Reptile surveys**
-
-```{r}
-
-```
-
-# **Footprint tunnels (optional)**
-
-```{r}
-
-```
 
 # **Session information**
 
