@@ -1,7 +1,7 @@
 ---
 title: "ENVS2018 Environmental Science Field School: Kioloa analyses"
-author: "Shoshana Rapley, Belinda Wilson"
-date: "13 September 2023"
+author: "Shoshana Rapley, Saul Cunningham"
+date: "20 September 2023"
 output:
   html_document:
     toc: true
@@ -11,6 +11,7 @@ output:
       collapsed: true
     theme: cerulean
     highlight: pygments
+    code_folding: hide
 editor_options: 
   chunk_output_type: console
 knit: (function(inputFile, encoding) { rmarkdown::render(inputFile, encoding = encoding, output_file = file.path(dirname(inputFile), 'tutorial.html')) })
@@ -27,25 +28,14 @@ The reports must use our field collected data. We will work together to collect 
 
 # **Setup**
 
-This document is called a 'markdown'. It's a way to share code, annotations and results all in one place, how good! For those of you interested in coding, we will include some notes on how we produced the results. Notes in the code itself that start with a hash and are in green font explain what the next line of code achieves.  
+This document is called a 'markdown'. It's a way to share code, annotations and results all in one place, how good! 
 
-Code note: First, we installed the [pacman Package Management Tool](https://cran.r-project.org/web/packages/pacman/index.html), which allows us to install and load subsequent packages in a condensed and efficient way.
-
-```{r, eval=FALSE}
-#install.packages(pacman)
-```
+If you are interested in the code you can 'unfold' the chunks by clicking the 'Show' icon. There is also an option on the top right of the document called 'Code' that allows you to show or hide all code chunks. Notes in the code itself that start with a hash and are in green font explain what the next line of code achieves.  
 
 ```{r}
 # Install and load required packages
 pacman::p_load(dplyr, ggplot2, gt, janitor, lme4, lubridate, 
                rstudioapi, readxl, sjmisc, tidyr, tidyverse)
-```
-
-Code note: We also set the working directly to where this R markdown is saved using the `rstudioapi` package.
-
-```{r}
-# Set the working directory to where this markdown is saved
-setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 ```
 
 # **Vegetation communities**
@@ -55,12 +45,12 @@ We collected vegetation data using the biometric tool. This included composition
 Let's start by looking at a matrix of the floral composition. 
 
 The species composition table has each site as a row, and each column is a plant species. The number 1 means the species was present in the composition survey. In some cases the plant species have been organised into groups that are similar, as follows.
-•	Block 1 are trees species that occupy the overstorey
-•	Block 2 are mid storey species that are recognised as favouring rainforest vegetation (according to https://plantnet.rbgsyd.nsw.gov.au/)
-•	Block 3 are species in the genus Acacia, which occur in the mid storey
-•	Block 4 are ferns
-•	Block 5 are grasses
-•	Block 6 are plants in the family Cyperaceae, which we call “true sedges”. Lomandra longifolia is sometimes grouped with the sedges but is actually a different plant family
+*	Block 1 are trees species that occupy the overstorey
+*	Block 2 are mid storey species that are recognised as favouring rainforest vegetation (according to https://plantnet.rbgsyd.nsw.gov.au/)
+*	Block 3 are species in the genus Acacia, which occur in the mid storey
+*	Block 4 are ferns
+*	Block 5 are grasses
+*	Block 6 are plants in the family Cyperaceae, which we call “true sedges”. Lomandra longifolia is sometimes grouped with the sedges but is actually a different plant family
 The other species (in grey) are not blocked, but plants in the same genus are put next to each other.
 
 Note that as you progress down the rows of the table you have species that are not blocked with similar species, and which are found in relatively few sites. Therefore they are less useful in interpreting the similarities and differences in composition of the plant communities.
@@ -72,13 +62,12 @@ I have not put the paddock sites (P1, P2, P3, P4) into the species composition t
 # read in the data 
 comp_data <- read_excel("data/ENVS2018 kioloa flora composition 2023.xlsx", sheet = 2)
 
-#determine colour palette
-viridisLite::viridis(n=7, alpha=.8)
-
 # create a pretty table using the package 'gt'
 comp_table <- gt(comp_data) %>%
+  tab_options(data_row.padding = px(1)) %>%
   # change font size
-  tab_style(style = cell_text(size = px(12)), locations = cells_body()) %>%
+  tab_style(style = cell_text(size = px(12)), locations = cells_column_labels()) %>%
+  tab_style(style = cell_text(size = px(10)), locations = cells_body()) %>%
   # add header
   tab_header(title = "Floral composition", 
              subtitle = "ENVS2018 Student data Kioloa 2023") %>%
@@ -111,18 +100,15 @@ comp_table
 Great. What you can see here is the distribution of plant types (i.e. overstory, midstory, rainforest loving, sedge) across the sites. 
 
 The labels OG, RG, RF, P and C were assigned without a detailed analysis of the composition of the plant communities and should not be used as an assumed grouping of sites into communities. Instead I have suggested a grouping of sites in terms of similarity in plant species composition, below.
-•	OG10, OG5, OG7, OG9 and RF1 have *Corymbia maculata* and *Eucalyptus pilularis* in the overstory, and Acacia species in the midstorey. There are ferns in the ground layer, but only one species of Cyperaceae. Some ‘rainforest loving’ species are also found here. For this report we can call these sites **“Upper slope eucalypt forest”**
-•	RF2, RF3, and RF4 have *Backhousia myrtifolia* in the midstorey, plus a few other rainforest loving species. All sites have ferns. Shrubs in the Notelaea are absent. RF2 is a bit more similar to the Upper slope eucalypt forest, noting it has some grass and *Gahnia melanocarpa*, which RF3 and RF4 do not. For this report we can call these sites **“Moist gully rainforest”**
-•	RG1, RG2, RG3, RG4, RG8, RG10 have *Corymbia maculata* in the overstory, but no *Eucalyptus botryoides* or *Casuarina glauca*. All have Acacia mid story and Cyperaceae in the ground layer. Most sites don’t have ferns, and none have Livistona palms or rainforest-loving species. For this report we can call them these sites **“Lower slope eucalypt forest”**
-•	C1, C2, RG2, and OG1 have *Corymbia maculata* and *Eucalyptus botryoides* in the canopy. They have Acacia species in the mid layer. Although they occur toward the coast, they do not have *Casuarina glauca*. For this report we can call it **“Coastal eucalypt forest”**
-•	C3, C4, and C5 have a canopy of *Casuarina glauca*. There are no Acacia in the mid story or ferns in the ground layer. Two of these sites have the palm, *Livistona australis*. Species moderately common in other sites but missing from here include Hibbertia species, Dodonaea species and *Synoum glandulosum*. For this report we can call these sites **“Coastal Casuarina forest”**
+*	OG10, OG5, OG7, OG9 and RF1 have *Corymbia maculata* and *Eucalyptus pilularis* in the overstory, and Acacia species in the midstorey. There are ferns in the ground layer, but only one species of Cyperaceae. Some ‘rainforest loving’ species are also found here. For this report we can call these sites **“Upper slope eucalypt forest”**
+*	RF2, RF3, and RF4 have *Backhousia myrtifolia* in the midstorey, plus a few other rainforest loving species. All sites have ferns. Shrubs in the Notelaea are absent. RF2 is a bit more similar to the Upper slope eucalypt forest, noting it has some grass and *Gahnia melanocarpa*, which RF3 and RF4 do not. For this report we can call these sites **“Moist gully rainforest”**
+*	RG1, RG2, RG3, RG4, RG8, RG10 have *Corymbia maculata* in the overstory, but no *Eucalyptus botryoides* or *Casuarina glauca*. All have Acacia mid story and Cyperaceae in the ground layer. Most sites don’t have ferns, and none have Livistona palms or rainforest-loving species. For this report we can call them these sites **“Lower slope eucalypt forest”**
+*	C1, C2, RG2, and OG1 have *Corymbia maculata* and *Eucalyptus botryoides* in the canopy. They have Acacia species in the mid layer. Although they occur toward the coast, they do not have *Casuarina glauca*. For this report we can call it **“Coastal eucalypt forest”**
+*	C3, C4, and C5 have a canopy of *Casuarina glauca*. There are no Acacia in the mid story or ferns in the ground layer. Two of these sites have the palm, *Livistona australis*. Species moderately common in other sites but missing from here include Hibbertia species, Dodonaea species and *Synoum glandulosum*. For this report we can call these sites **“Coastal Casuarina forest”**
 
 Let's highlight the groupings and add headers to make these communities easier to see.
 
 ```{r}
-#determine colour palette
-viridisLite::viridis(n=6, alpha=.2)
-
 comp_table2 <- comp_table %>%
   # add column colours for community type (using a 7 colour viridis scale with transparency)
   tab_style(style = list(cell_fill(color = "#44015433")),
@@ -148,7 +134,7 @@ comp_table2
 
 ```
 
-Excellent! Now that we have our groupings, let's take a look at the biometric data you collected. Note: paddock data is derived from 2022 (since you didn't collect it this year).
+Excellent! Now that we have our groupings, let's take a look at the biometric data you collected. Note: paddock data is derived from 2022 (since you didn't collect it this year). We will highlight cells for a few key variables based on their values to make it easier to see what's going on. 
 
 ```{r}
 # read in data
@@ -156,8 +142,10 @@ biometric_data <- read_excel("data/ENVS2018 kioloa biometric 2023.xlsx", sheet =
 
 # make table in gt
 biometric_table <- gt(biometric_data) %>%
+  tab_options(data_row.padding = px(1)) %>%
   # change font size
-  tab_style(style = cell_text(size = px(12)), locations = cells_body(!2)) %>%
+  tab_style(style = cell_text(size = px(12)), locations = cells_column_labels()) %>%
+  tab_style(style = cell_text(size = px(10)), locations = cells_body()) %>%
   # add header
   tab_header(title = "Biometric data", 
              subtitle = "ENVS2018 Student data Kioloa 2023") %>%
@@ -182,16 +170,7 @@ biometric_table <- gt(biometric_data) %>%
   tab_style(style = list(cell_fill(color = "#FDE72533")),
     locations = cells_body(rows = 18:20, columns = 1:2)) %>%
   tab_style(style = list(cell_fill(color = "#EAEAEA")),
-    locations = cells_body(rows = 21:24, columns = 1:2))
-
-biometric_table
-
-```
-
-Great. There are some patterns in the communities. Let's highlight cells for a few key variables based on their values to make it easier to see what's going on. 
-
-```{r}
-biometric_table2 <- biometric_table %>%
+    locations = cells_body(rows = 21:24, columns = 1:2)) %>%
   # colour columns according to values
   # Grass > 40%
    tab_style(cell_fill(color = "#F9E3D6"),
@@ -230,8 +209,7 @@ biometric_table2 <- biometric_table %>%
     tab_footnote(footnote = "Highlighted coarse woody debris where the total length > 100m",
     locations = cells_column_labels(columns = CWD))
 
-
-biometric_table2
+biometric_table
 
 ```
 
@@ -330,8 +308,10 @@ summary_stats <- biometric_data %>% clean_names() %>%
   mutate_at(c(3:8), as.numeric)
 
 summary_stats_table <- gt(summary_stats) %>%
+  tab_options(data_row.padding = px(1)) %>%
   # change font size
-  tab_style(style = cell_text(size = px(12)), locations = cells_body(!1)) %>%
+  tab_style(style = cell_text(size = px(12)), locations = cells_column_labels()) %>%
+  tab_style(style = cell_text(size = px(10)), locations = cells_body()) %>%
   # add header
   tab_header(title = "Biometric data summary statistics", 
              subtitle = "ENVS2018 Student data Kioloa 2023") %>%
