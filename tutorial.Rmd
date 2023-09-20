@@ -14,48 +14,58 @@ output:
     code_folding: hide
 editor_options: 
   chunk_output_type: console
-knit: (function(inputFile, encoding) { rmarkdown::render(inputFile, encoding = encoding, output_file = file.path(dirname(inputFile), 'tutorial.html')) })
+knit: (function(inputFile, encoding) { rmarkdown::render(inputFile, encoding = encoding, output_file = file.path(dirname(inputFile), 'ENVS2018 Kioloa Report Results.html')) })
 ---
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(warning=FALSE, message=FALSE)
 ```
 
-# **Background**
+# Background
 
 For the Kioloa week the report will focus on biodiversity. In particular, you should examine the composition and structure of different plant communities at Kioloa, whether animal communities also differ, and how these patterns relate to the underlying soils and geology.
 
 The reports must use our field collected data. We will work together to collect and summarise the data during the field trip and will share the summarised data so that all students are working with the same information. We do not ask you to conduct any additional statistical analyses. Rather, the task is to describe and patterns in the data that we have shared and indicate what processes have influenced the development of these patterns.
 
-# **Setup**
+# Markdown
 
 This document is called a 'markdown'. It's a way to share code, annotations and results all in one place, how good! 
 
-If you are interested in the code you can 'unfold' the chunks by clicking the 'Show' icon. There is also an option on the top right of the document called 'Code' that allows you to show or hide all code chunks. Notes in the code itself that start with a hash and are in green font explain what the next line of code achieves.  
+If you are interested in the code you can 'unfold' the chunks by clicking the 'Show' icon. There is also an option on the top right of the document called 'Code' that allows you to show or hide all code chunks. Notes in the code itself that start with a hash explain what the next line of code achieves.  
 
 ```{r}
 # Install and load required packages
-pacman::p_load(dplyr, ggplot2, gt, janitor, lme4, lubridate, 
-               rstudioapi, readxl, sjmisc, tidyr, tidyverse)
+pacman::p_load(dplyr, ggplot2, ggrepel, gt, janitor, lme4, lubridate, 
+               rstudioapi, readxl, sjmisc, tidyr, tidyverse, vegan)
 ```
 
-# **Vegetation communities**
+# Vegetation communities
 
 We collected vegetation data using the biometric tool. This included compositional elements (e.g. overstory trees) and functional elements (e.g. woody debris). 
+
+## Floral composition
 
 Let's start by looking at a matrix of the floral composition. 
 
 The species composition table has each site as a row, and each column is a plant species. The number 1 means the species was present in the composition survey. In some cases the plant species have been organised into groups that are similar, as follows.
+
 *	Block 1 are trees species that occupy the overstorey
+
 *	Block 2 are mid storey species that are recognised as favouring rainforest vegetation (according to https://plantnet.rbgsyd.nsw.gov.au/)
+
 *	Block 3 are species in the genus Acacia, which occur in the mid storey
+
 *	Block 4 are ferns
+
 *	Block 5 are grasses
+
 *	Block 6 are plants in the family Cyperaceae, which we call “true sedges”. Lomandra longifolia is sometimes grouped with the sedges but is actually a different plant family
+
 The other species (in grey) are not blocked, but plants in the same genus are put next to each other.
 
 Note that as you progress down the rows of the table you have species that are not blocked with similar species, and which are found in relatively few sites. Therefore they are less useful in interpreting the similarities and differences in composition of the plant communities.
 
 I have not put the paddock sites (P1, P2, P3, P4) into the species composition table because we did not survey them this year. However, you could see that they had little or no tree cover (ie only scattered Eucalyptus tereticornis) no mid storey shrubs, and a ground layer dominated by grasses including introduced species that have been sown for livestock grazing.
+
 
 
 ```{r}
@@ -97,16 +107,24 @@ comp_table
 
 ```
 
-Great. What you can see here is the distribution of plant types (i.e. overstory, midstory, rainforest loving, sedge) across the sites. 
+
+Great. What you can see here is the distribution of dominant species across the sites. In the left-most column there is a note on the structural layer the species belongs to (i.e. ground, mid and overstory); in some cases there is an additional note about a detail the plant type as it pertains to the groupings (e.g. rainforest loving, sedge).
 
 The labels OG, RG, RF, P and C were assigned without a detailed analysis of the composition of the plant communities and should not be used as an assumed grouping of sites into communities. Instead I have suggested a grouping of sites in terms of similarity in plant species composition, below.
-*	OG10, OG5, OG7, OG9 and RF1 have *Corymbia maculata* and *Eucalyptus pilularis* in the overstory, and Acacia species in the midstorey. There are ferns in the ground layer, but only one species of Cyperaceae. Some ‘rainforest loving’ species are also found here. For this report we can call these sites **“Upper slope eucalypt forest”**
-*	RF2, RF3, and RF4 have *Backhousia myrtifolia* in the midstorey, plus a few other rainforest loving species. All sites have ferns. Shrubs in the Notelaea are absent. RF2 is a bit more similar to the Upper slope eucalypt forest, noting it has some grass and *Gahnia melanocarpa*, which RF3 and RF4 do not. For this report we can call these sites **“Moist gully rainforest”**
-*	RG1, RG2, RG3, RG4, RG8, RG10 have *Corymbia maculata* in the overstory, but no *Eucalyptus botryoides* or *Casuarina glauca*. All have Acacia mid story and Cyperaceae in the ground layer. Most sites don’t have ferns, and none have Livistona palms or rainforest-loving species. For this report we can call them these sites **“Lower slope eucalypt forest”**
-*	C1, C2, RG2, and OG1 have *Corymbia maculata* and *Eucalyptus botryoides* in the canopy. They have Acacia species in the mid layer. Although they occur toward the coast, they do not have *Casuarina glauca*. For this report we can call it **“Coastal eucalypt forest”**
-*	C3, C4, and C5 have a canopy of *Casuarina glauca*. There are no Acacia in the mid story or ferns in the ground layer. Two of these sites have the palm, *Livistona australis*. Species moderately common in other sites but missing from here include Hibbertia species, Dodonaea species and *Synoum glandulosum*. For this report we can call these sites **“Coastal Casuarina forest”**
+
+*	OG10, OG5, OG7, OG9 and RF1 have *Corymbia maculata* and *Eucalyptus pilularis* in the overstory, and *Acacia* species in the midstorey. There are ferns in the ground layer, but only one species of *Cyperaceae*. Some ‘rainforest loving’ species are also found here. For this report we can call these sites **“Upper slope eucalypt forest”**
+
+*	RF2, RF3, and RF4 have *Backhousia myrtifolia* in the midstorey, plus a few other rainforest loving species. All sites have ferns. Shrubs in the *Notelaea* are absent. RF2 is a bit more similar to the Upper slope eucalypt forest, noting it has some grass and *Gahnia melanocarpa*, which RF3 and RF4 do not. For this report we can call these sites **“Moist gully rainforest”**
+
+*	RG1, RG2, RG3, RG4, RG8, RG10 have *Corymbia maculata* in the overstory, but no *Eucalyptus botryoides* or *Casuarina glauca*. All have *Acacia* mid story and *Cyperaceae* in the ground layer. Most sites don’t have ferns, and none have *Livistona* palms or rainforest-loving species. For this report we can call them these sites **“Lower slope eucalypt forest”**
+
+*	C1, C2, RG2, and OG1 have *Corymbia maculata* and *Eucalyptus botryoides* in the canopy. They have *Acacia* species in the mid layer. Although they occur toward the coast, they do not have *Casuarina glauca*. For this report we can call it **“Coastal eucalypt forest”**
+
+*	C3, C4, and C5 have a canopy of *Casuarina glauca*. There are no *Acacia* in the mid story or ferns in the ground layer. Two of these sites have the palm, *Livistona australis*. Species moderately common in other sites but missing from here include *Hibbertia* species, *Dodonaea* species and *Synoum glandulosum*. For this report we can call these sites **“Coastal Casuarina forest”**
 
 Let's highlight the groupings and add headers to make these communities easier to see.
+
+
 
 ```{r}
 comp_table2 <- comp_table %>%
@@ -134,7 +152,11 @@ comp_table2
 
 ```
 
+## Biometric values
+
 Excellent! Now that we have our groupings, let's take a look at the biometric data you collected. Note: paddock data is derived from 2022 (since you didn't collect it this year). We will highlight cells for a few key variables based on their values to make it easier to see what's going on. 
+
+
 
 ```{r}
 # read in data
@@ -213,7 +235,11 @@ biometric_table
 
 ```
 
-Nice. That's given us a good overview of how the biometric features vary by community type. Let's now summarise and visualise the data as boxplots. A boxplot shows the mean(middle line of the box), quartiles (the box and whiskers) and outliers (dots) and are useful for comparing quantitative data among groups. 
+## Visualisation
+
+Nice. That's given us a good overview of how the biometric features vary by community type. Let's now summarise and visualise the data as boxplots. A boxplot shows the mean (middle line of the box), quartiles (the box and whiskers) and outliers (dots) and are useful for comparing quantitative data among groups. 
+
+
 
 ```{r}
   # remove white spaces in names so can work easily in ggplot
@@ -238,7 +264,10 @@ ggplot(cover) +
 
 ```
 
+
 Good. We can see there are consistently low values for cryptogam, rock and bare ground, so let's remove those to make the others easier to read. 
+
+
 
 ```{r}
 cover2 <- cover %>% 
@@ -254,7 +283,12 @@ ggplot(cover2) +
 
 ```
 
-Now let's look at the mid and overstory cover, plus the combined mid and overstory (called in the plot 'cover'). This gives us an indication of how much light will get through to the floor. 
+
+Interesting!
+
+Now let's look at the mid and overstory cover, plus the combined mid and overstory (called in the plot 'cover'). The combined mid and overstory metric gives us an indication of how much light will get through to the floor (which in turn affects which plants can grow there).
+
+
 
 ```{r}
 # break into tree cover data and convert to long format for graphing
@@ -272,7 +306,11 @@ ggplot(tree) +
 
 ```
 
-Now let's look at the count data: trees, trees with hollows and length of CWD.
+
+
+Now let's look at the count biometric data: trees, trees with hollows and length of CWD.
+
+
 
 ```{r}
 # break into cover data and convert to long format for graphing
@@ -290,7 +328,13 @@ ggplot(count) +
 
 ```
 
-And we'll calculate the following summary statistics for all features: mean and standard deviation.
+Great!
+
+## Summary Statistics
+
+And we'll calculate the following summary statistics for all features: mean and standard deviation. You can use these numbers in the report.
+
+
 
 ```{r}
 summary_stats <- biometric_data %>% clean_names() %>%
@@ -346,26 +390,346 @@ summary_stats_table
 
 ```
 
-# **Bird surveys**
+# Bird surveys
 
-We conducted expert bird surveys of all the plots. The observer recorded all birds seen and heard in a five-minute period in the following distance categories: <25m, 25-50m, 50-100m, 100+m and  overhead. We also asked you to estimate how many species you could identify during the survey. 
+We conducted expert bird surveys of all the plots. The observer (Sho, Julian or Belinda) recorded all birds seen and heard in a five-minute period in the following distance categories: <25m, 25-50m, 50-100m, 100+m and  overhead. We also asked you to estimate how many species you could identify during the survey. 
 
-Let's start by visualising and summarising the data to get our heads around it. 
+## Site visits
+
+Let's start by visualising and summarising the data to get our heads around it. Each site was surveyed twice, so let's look at each visit for each site. 
 
 ```{r}
 # read in the data and clean names 
 birds_expert <- read_excel("data/ENVS2018 kioloa bird data 2023.xlsx", sheet = 1) %>%
-  clean_names()
+  clean_names() %>%
+  # replace NAs with zeros
+  replace(is.na(.), 0) %>%
+  # sum counts by species for inside (0-50m) and outside (50+m) the site, and total
+  rowwise() %>%
+  mutate(count_in = sum(x25 + x25_50),
+         count_out = sum(x50_100 + x100 + overhead),
+         count_total = sum(count_in + count_out)) %>%
+  select(!c(8:12)) %>%
+  mutate(present_in = ifelse(count_in>0, 1, 0),
+         present_out = ifelse(count_out>0, 1, 0),
+         present_total = ifelse(count_total>0, 1, 0))
 
-birds_student <- read_excel("data/ENVS2018 kioloa bird data 2023.xlsx", sheet = 4) %>%
-  clean_names()
+# summarise by site for richness
+birds_richness <- birds_expert %>% group_by(site, visit) %>%
+  mutate(visit = as.factor(visit)) %>%
+  summarise(richness_in = sum(present_in>0),
+            richness_out = sum(present_out>0),
+            richness_total = sum(present_total>0))
+
+# plot site visits
+ggplot(birds_richness)+
+  geom_point(aes(site, richness_total, colour = visit)) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle=45))
 
 
+# calculate differences
+birds_alpha <- birds_richness %>% group_by(site) %>%
+  mutate(diff = abs(richness_total - lag(richness_total))) %>%
+  na.omit()
+
+alpha_diff <- data.frame(mean = mean(birds_alpha$diff),
+                        min = min(birds_alpha$diff),
+                        max = max(birds_alpha$diff),
+                        stdev = sd(birds_alpha$diff))
+
+print(alpha_diff)
 
 ```
 
+We can see that, in general, the counts were within 4 species each visit.
 
-# **Session information**
+How about the difference in diversity detected between each visit? I.e. the beta diversity. 
+```{r}
+birds_beta <- data.frame()
+sites <- unique(birds_expert$site)
+
+for (i in 1:24) {
+visit1 <- filter(birds_expert, site == sites[i] & visit == 1)
+visit2 <- filter(birds_expert, site == sites[i] & visit == 2)
+
+diff_a <- setdiff(visit1$common_name, visit2$common_name)
+diff_b <- setdiff(visit2$common_name, visit1$common_name)
+
+out <- data.frame(site = sites[i], beta = length(diff_a) + length(diff_b))
+birds_beta <- rbind(birds_beta, out)
+}
+
+beta_diff <- data.frame(mean = mean(birds_beta$beta),
+                        min = min(birds_beta$beta),
+                        max = max(birds_beta$beta),
+                        stdev = sd(birds_beta$beta))
+
+differences <- rbind(alpha_diff, beta_diff) %>%
+  add_column(type = c("alpha", "beta"), .before = "mean")
+
+print(differences)
+
+```
+
+Although the total difference between the visits was small, the beta diversity was greater! There was always differences in the diversity between visits (the minimum is 7) and the mean beta diversity was 14. 
+
+This is part of why we do repeat visits to site- to capture the diversity. Visits may differ by time of day (e.g. 6am or 7am) or weather. 
+
+## Richness and diversity across sites and communities
+
+From here on we will use the total richness detected (i.e. total number of unique species across both visits).
+
+Let's summarise the species richness by sites. We will just do this for birds 'in' the site (i.e. within 50m, since then we can compare these data with the vegetation). Let's colour these by floristic community. 
+
+
+```{r}
+# filter to birds within 50m
+birds_insite <- birds_expert %>% 
+  filter(present_in>0) %>%
+  group_by(site) %>%
+  summarise(richness = length(unique(common_name)))
+
+# format for us in the package 'vegan'
+birds_vegan <- birds_expert %>%
+  select(c(4,6,8)) %>%
+  pivot_wider(names_from = common_name, values_from = count_in, values_fn = sum, values_fill = 0) %>%
+  column_to_rownames(var = "site")
+
+# create table of sites and communities
+communities <- data.frame(site = c("OG10", "OG9", "OG7", "OG5", "RF1", 
+                                   "RF2", "RF3", "RF4", 
+                                   "RG10", "RG1", "RG3", "RG4", "RG8", 
+                                   "C1", "C2", "OG1", "RG2", 
+                                   "C3", "C4", "C5",
+                                   "P10", "P1", "P2", "P3"),
+                          community = c(rep("Upper slope eucalypt forest", 5,),
+                                        rep("Moist gully rainforest", 3),
+                                        rep("Lower slope eucalypt forest", 5),
+                                        rep("Coastal eucalypt forest", 4),
+                                        rep("Coastal Casuarina forest", 3),
+                                        rep("Paddock", 4)))
+
+# assign communities to bird data
+birds_insite2 <- left_join(communities, birds_insite) %>%
+  mutate(community = as_factor(community)) %>%
+  arrange(community)
+# set the plots in the right order for plotting
+birds_insite2$site <- factor(birds_insite2$site, levels = birds_insite2$site)
+
+# plot by community
+ggplot(birds_insite2) +
+  geom_boxplot(aes(community, richness, fill = community))+
+  scale_fill_viridis_d()+
+  theme_minimal() +
+  theme(axis.text.x = element_blank())
+
+# summary statistics
+birds_summary <- birds_insite2 %>% group_by(community) %>%
+  summarise(mean_richness = mean(richness),
+            stdev = sd(richness))
+
+print(birds_summary)
+
+# test if there is a difference in richness by community
+richness <- specnumber(birds_diversity)
+sp_aov <- aov(richness ~ community, data = communities)
+anova(sp_aov)
+
+```
+
+Interesting! The moist gully rainforest had the highest species richness, with an average of 15.3 species. The paddock (unsuprisingly) had the lowest. There is no significant difference in bird species richness between the community types (Pr[>F]=0.8084). 
+
+But as we know, richness doesn't tell us everything. What about beta diversity between the sites and communities?
+
+```{r}
+# select all birds in sites
+species <- birds_expert %>%
+  filter(present_in==1) %>%
+  # add community
+  left_join(communities)
+
+# for loop of birds only found in that site
+sites_beta <- data.frame()
+sites <- unique(birds_expert$site)
+
+for (i in 1:24) {
+site_test <- species %>% filter(site == sites[i])
+site_other <- species %>% filter(!site == sites[i])
+
+diff_site <- setdiff(site_test$common_name, site_other$common_name)
+
+if(length(diff_site) == 0){ 
+  next 
+  }
+out <- data.frame(site = sites[i], unique = diff_site)
+sites_beta <- rbind(sites_beta, out)
+}
+
+print(sites_beta)
+
+```
+
+Cool. Half of the sites had at least one unique bird species found no where else. The site with the highest count of unique birds was P1 with Brown Quail, Cattle Egret and Willie Wagtail. 
+
+Let's now look at the unique diversity across the floristic communities. 
+
+```{r}
+# for loop of birds only found in that community
+comm_beta <- data.frame()
+comm <- unique(communities$community)
+
+for (i in 1:6) {
+comm_test <- species %>% filter(community == comm[i])
+comm_other <- species %>% filter(!community == comm[i])
+
+diff_comm <- setdiff(comm_test$common_name, comm_other$common_name)
+
+if(length(diff_site) == 0){ 
+  next 
+  }
+out <- data.frame(community = comm[i], unique = diff_comm)
+comm_beta <- rbind(comm_beta, out)
+}
+
+# summarise unique birds
+comm_beta_sum <- comm_beta %>% 
+  mutate(community = as_factor(community)) %>%
+  group_by(community) %>% 
+  summarise(unique_species = length(unique))
+
+# plot unique birds by community
+ggplot(comm_beta_sum)+
+  geom_point(aes(unique_species, community, colour = community), size = 5) +
+  scale_colour_viridis_d()+
+  xlim(0,11)+
+  theme_minimal()
+
+# print the unique birds
+print(comm_beta)
+
+```
+
+Very cool! There were a total of 26 bird species only found in one community type. The lower slope eucalypt forest had the greatest number of unique species (n=8) followed by the paddock (n=7).
+
+We only detected Mistletoebird in the lower slope eucalypt forest. As the name suggests, Mistletoebirds specalise on mistletoe fruit. Mistletoes are hemiparasitic plants that grow on the branches of other plants. There are approximately 100 species of mistletoe in Australia and these often have only one or two host trees. Mistletoes are an important element of eucalypt forests and woodlands because they provide fruit (for frugivorous birds) and, more importantly, they provide pockets of cover that are good for nesting in. Of the Australian birds that construct nests in trees, roughly two-thirds of them will preferentially nest in mistletoe. Mistletoe can have a bad reputation in popular culture because of the misconception that they kill trees. In some cases, mistletoe loads become high and this places additional water stress on the host tree; but the underlying cause of this issue is habitat fragmentation. It is possible that we detected Mistletoebird in RG4 because of the presence of Mistletoe. 
+
+Despite the apparent 'lack' of 'habitat' in the paddocks, there are a number of birds that are found in the paddock and nowhere else. Different birds have different requirements, some of which include open grassland areas and some are resilient to degraded landscapes. For example, the Australasian Pipit is a grassland insectivore that is mostly usually on the ground in open pasture or native grassland. It nests on the ground in tussocks. 
+
+We only found Brown Cuckoo-Dove in the rainforest, which is unsurprising since they are a rainforest species (as well as wet sclerophyll) especially found along creeks and rivers. They are largely frugivores (eating fruit and berries, but also seeds), and can eat (and disperse) hard to digest fruits. 
+
+These are just a couple of examples of how unique species relate to the vegetation and landscape. You could look into more of the unique species' ecology for your report.
+
+## Diversity indices
+
+We can also calculate indices for diversity aside from richness. For instance, Simpsons's diversity index takes into account abundance as well as richness. Why do we care about abundance? Some species are not evenly distributed in the landscape, even if they are found in more than one place. This metric helps us take that into account.
+
+```{r}
+# calculate simpson's diversity index for each site
+simpson <- as.data.frame(diversity(birds_vegan, index = "simpson")) %>%
+  rownames_to_column() %>%
+  rename(site = 1,
+         simpsons = 2) %>%
+  left_join(communities)
+
+simpson2 <- diversity(birds_vegan, index = "simpson")
+
+# plot simpsons by community
+ggplot(simpson) +
+  geom_boxplot(aes(community, simpsons, fill = community))+
+  scale_fill_viridis_d()+
+  theme_minimal() +
+  theme(axis.text.x = element_blank())+
+  ylim(c(0.6, 1))
+
+# test difference
+simpson_aov <- aov(simpson2 ~ community, data = communities)
+anova(simpson_aov)
+
+```
+
+Note the y-axis is limited to a minimum of 0.6 to make this easier to read. 
+
+The moist gully rainforest had the highest average Simpson's diversity index, which means it is more biodiverse in terms of both species richness and abundance. There was no significant in Simpson's diversity index among the communities.  
+
+## Birds and biomnetric features
+
+So far we have looked at the bird richness by the floristic communities. But what about the habitat features you collected data on during the biometric surveys? Birds choose where to be in the landscape based on features that they prefer or avoid. 
+
+I'm going to start by running a constrained ordination- this looks at the distribution of the bird community across environmental variables (in our case, biometric data). The type we are doing is called 'Canonical Correspondance Analysis' (CCA),
+
+For more information on how this works you can use the same tutorial I did to produce this: https://rpubs.com/an-bui/vegan-cheat-sheet
+
+```{r}
+# exclude paddocks because way out on their own
+birds_vegan2 <- birds_vegan %>% 
+  rownames_to_column() %>%
+  filter(!rowname %in% c("P1","P2","P3")) %>%
+  column_to_rownames()
+
+biometric_data2 <- filter(biometric_data, !Site %in% c("P1","P2","P3"))
+
+# CCA
+birdCCA <- cca(birds_vegan2 ~ Forb + Grass + Litter + Midstory + Overstory + 
+                 Cover + Trees + Hollow + CWD, data = biometric_data2)
+
+# extracting the bird community data
+CCA_bird <- as.data.frame(birdCCA$CCA$v) %>%
+  rownames_to_column()%>%
+  rename(bird = rowname)
+
+# plot
+ggplot() +
+  geom_point(data = CCA_bird, aes(x = CCA1, y = CCA2), color = "darkblue")+
+  geom_text_repel(data = CCA_bird, aes(x = CCA1, y = CCA2, label = bird),
+                  nudge_y = -0.05) +
+  theme_minimal()
+
+```
+
+Awesome! Let's read this figure. You can essentially ignore the axes here (arbitrary numbers in ordination space). What we are interested in is the grouping of birds. What this figure shows us is how birds cluster in the landscape according to the vegetation features (at least the ones we measured). And it looks pretty good! Not all the birds are labelled because the ones in the middle are so overlapping (read: likely to co-occur) that they didn't get shown. 
+
+There are plenty of groupings I would expect to see here, for example Crimson Rosella, Galah, Laughing Kookaburra, Red Wattlebird and Superb Fairywren is a classic assemblage (and usually ones you see in places with human interference because all of those birds are resilient to modified and urban areas). 
+Likewise, Gang-Gang Cockatoo, Superb Lyrebird and Eastern Shriketit are a grouping that make sense because they are more sensitive to change and are likely to be in better 'quality' habitat (the Rainbow Lorikeet is an odditity here, they only landed in the site once, so this was more due to chance). 
+As a final example, the cluster of birds around Yellow Thornbill is a likely community of the Casuarina forest (largely because there are more edges in this community type and the birds of this group like edges).
+
+## Student estimates of bird richness
+
+And out of interest, how well did you do at estimating the bird richness at each site? Let's compare average expert and student counts. These are total (i.e. all within 50m and >50m). 
+
+```{r}
+# read in data
+birds_student <- read_excel("data/ENVS2018 kioloa bird data 2023.xlsx", sheet = 4) %>%
+  clean_names() %>%
+  mutate(estimate = as.numeric(estimate)) %>%
+  select(3:4) %>%
+  rename(student = 2) %>%
+  pivot_longer(2, names_to = "observer", values_to = "birds")
+
+# combine expert and student
+birds_compare <- birds_richness %>% 
+  select(c(1,5)) %>% 
+  rename(expert = 2) %>%
+  pivot_longer(2, names_to = "observer", values_to = "birds") %>%
+  rbind(birds_student)
+  
+# plot expert and student
+ggplot(birds_compare)+
+  geom_boxplot(aes(site, birds, fill = observer), alpha = .8,
+               position=position_dodge(width=.3)) +
+  theme_minimal()+
+  theme(axis.text.x = element_text(angle=45))
+  
+
+```
+
+In general, you underestimated the total number of species- which is to be expected! It takes a lot of practice and patience to learn bird calls. I hope you enjoyed coming out on the bird surveys with us and I appreciated your enthusiasm despite the early start!
+
+Good luck with the report writing. 
+
+FIN
+
+# Session information
 
 ```{r}
 # Display version information for R, OS, and packages
