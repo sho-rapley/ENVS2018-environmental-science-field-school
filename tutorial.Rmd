@@ -22,25 +22,27 @@ knitr::opts_chunk$set(warning=FALSE, message=FALSE)
 
 # Background
 
-For the Kioloa week the report will focus on biodiversity. In particular, you should examine the composition and structure of different plant communities at Kioloa, whether animal communities also differ, and how these patterns relate to the underlying soils and geology.
+The purpose of the Kioloa week report is to report on the patterns of biodiversity we observed. In particular, you should examine the composition and structure of different plant communities at Kioloa, whether animal (bird) communities also differ, and consider how these patterns relate to the underlying soils and geology.
 
-The reports must use our field collected data. We will work together to collect and summarise the data during the field trip and will share the summarised data so that all students are working with the same information. We do not ask you to conduct any additional statistical analyses. Rather, the task is to describe and patterns in the data that we have shared and indicate what processes have influenced the development of these patterns.
+We are excited to share the whole-class survey results with you all, because there are some really interesting patterns here. Keep in mind when writing the reports that we want you to use this data summary as source material. We are not expecting that you do further, more complex analyses. You can focus on the summary data that we have provided. You may also use the figures/graphs from this markdown in your report.
+
+Also you are not required to report on every piece of data. Given that we have more than 100 species in the list and 14 habitat measures, this would dilute the message of the report. Keep your focus on the data that show patterns of interest. Try to pick a narrative from these data that you find interesting and that you can explain within the constraints of the wordcount. 
 
 # Markdown
 
 This document is called a 'markdown'. It's a way to share code, annotations and results all in one place, how good! 
 
-If you are interested in the code you can 'unfold' the chunks by clicking the 'Show' icon. There is also an option on the top right of the document called 'Code' that allows you to show or hide all code chunks. Notes in the code itself that start with a hash explain what the next line of code achieves.  
+If you are interested in the code you can unfold the chunks by clicking the 'Show' icon. There is also an option on the top right of the document called 'Code' that allows you to show or hide all code chunks. Notes in the code itself that start with a hash explain what the next line of code achieves.  
 
 ```{r}
 # Install and load required packages
-pacman::p_load(dplyr, ggplot2, ggrepel, gt, janitor, lme4, lubridate, 
+pacman::p_load(dplyr, gdata, ggplot2, ggrepel, gt, gtExtras, janitor, lme4, lubridate, 
                rstudioapi, readxl, sjmisc, tidyr, tidyverse, vegan)
 ```
 
 # Vegetation communities
 
-We collected vegetation data using the biometric tool. This included compositional elements (e.g. overstory trees) and functional elements (e.g. woody debris). 
+We collected vegetation data using the biometric tool methodology. This included compositional elements (e.g. overstory trees) and functional elements (e.g. woody debris). 
 
 ## Floral composition
 
@@ -48,24 +50,23 @@ Let's start by looking at a matrix of the floral composition.
 
 The species composition table has each site as a row, and each column is a plant species. The number 1 means the species was present in the composition survey. In some cases the plant species have been organised into groups that are similar, as follows.
 
-*	Block 1 are trees species that occupy the overstorey
+*	Block 1 are trees species that occupy the overstory
 
-*	Block 2 are mid storey species that are recognised as favouring rainforest vegetation (according to https://plantnet.rbgsyd.nsw.gov.au/)
+*	Block 2 are mid story species that are recognised as favouring rainforest vegetation (according to https://plantnet.rbgsyd.nsw.gov.au/)
 
-*	Block 3 are species in the genus Acacia, which occur in the mid storey
+*	Block 3 are species in the genus *Acacia*, which occur in the mid story
 
 *	Block 4 are ferns
 
 *	Block 5 are grasses
 
-*	Block 6 are plants in the family Cyperaceae, which we call “true sedges”. Lomandra longifolia is sometimes grouped with the sedges but is actually a different plant family
+*	Block 6 are plants in the family *Cyperaceae*, which we call “true sedges”. *Lomandra longifolia* is sometimes grouped with the sedges but is actually a different plant family
 
 The other species (in grey) are not blocked, but plants in the same genus are put next to each other.
 
 Note that as you progress down the rows of the table you have species that are not blocked with similar species, and which are found in relatively few sites. Therefore they are less useful in interpreting the similarities and differences in composition of the plant communities.
 
-I have not put the paddock sites (P1, P2, P3, P4) into the species composition table because we did not survey them this year. However, you could see that they had little or no tree cover (ie only scattered Eucalyptus tereticornis) no mid storey shrubs, and a ground layer dominated by grasses including introduced species that have been sown for livestock grazing.
-
+I have not put the paddock sites (P1, P2, P3, P4) into the species composition table because we did not survey them this year. However, you could see that they had little or no tree cover (ie only scattered *Eucalyptus tereticornis*) no mid story shrubs, and a ground layer dominated by grasses including introduced species that have been sown for livestock grazing.
 
 
 ```{r}
@@ -108,7 +109,7 @@ comp_table
 ```
 
 
-Great. What you can see here is the distribution of dominant species across the sites. In the left-most column there is a note on the structural layer the species belongs to (i.e. ground, mid and overstory); in some cases there is an additional note about a detail the plant type as it pertains to the groupings (e.g. rainforest loving, sedge).
+What you can see here is the distribution of dominant species across the sites. In the left-most column there is a note on the structural layer the species belongs to (i.e. ground, mid and overstory); in some cases there is an additional note about a detail the plant type as it pertains to the groupings (e.g. rainforest loving, sedge).
 
 The labels OG, RG, RF, P and C were assigned without a detailed analysis of the composition of the plant communities and should not be used as an assumed grouping of sites into communities. Instead I have suggested a grouping of sites in terms of similarity in plant species composition, below.
 
@@ -122,7 +123,7 @@ The labels OG, RG, RF, P and C were assigned without a detailed analysis of the 
 
 *	C3, C4, and C5 have a canopy of *Casuarina glauca*. There are no *Acacia* in the mid story or ferns in the ground layer. Two of these sites have the palm, *Livistona australis*. Species moderately common in other sites but missing from here include *Hibbertia* species, *Dodonaea* species and *Synoum glandulosum*. For this report we can call these sites **“Coastal Casuarina forest”**
 
-Let's highlight the groupings and add headers to make these communities easier to see.
+Let's highlight the new community groupings and add headers to make these communities easier to see. The next table is the same as the last table except with colours and headings.
 
 
 
@@ -152,10 +153,13 @@ comp_table2
 
 ```
 
+Excellent! 
+
 ## Biometric values
 
-Excellent! Now that we have our groupings, let's take a look at the biometric data you collected. Note: paddock data is derived from 2022 (since you didn't collect it this year). We will highlight cells for a few key variables based on their values to make it easier to see what's going on. 
+Now that we have our groupings, let's take a look at the biometric data you collected.We will highlight cells for a few key variables based on their values to make it easier to see what's going on. 
 
+Note: paddock data is derived from 2022 (since you didn't collect it this year). 
 
 
 ```{r}
@@ -237,7 +241,7 @@ biometric_table
 
 ## Visualisation
 
-Nice. That's given us a good overview of how the biometric features vary by community type. Let's now summarise and visualise the data as boxplots. A boxplot shows the mean (middle line of the box), quartiles (the box and whiskers) and outliers (dots) and are useful for comparing quantitative data among groups. 
+That's given us a good overview of how the biometric features vary by community type. Let's now summarise and visualise the data as boxplots. A boxplot shows the mean (middle line of the box), quartiles (the box and whiskers) and outliers (dots) and are useful for comparing quantitative data among groups. 
 
 
 
@@ -328,7 +332,7 @@ ggplot(count) +
 
 ```
 
-Great!
+Great! You can use these graphs in your report. 
 
 ## Summary Statistics
 
@@ -392,7 +396,7 @@ summary_stats_table
 
 # Bird surveys
 
-We conducted expert bird surveys of all the plots. The observer (Sho, Julian or Belinda) recorded all birds seen and heard in a five-minute period in the following distance categories: <25m, 25-50m, 50-100m, 100+m and  overhead. We also asked you to estimate how many species you could identify during the survey. 
+We conducted expert bird surveys of all the plots. The observer (Sho, Julian or Belinda) recorded all birds seen and heard in a five-minute period in the following distance categories: <25m, 25-50m, 50-100m, >100m and overhead. We also asked you to estimate how many species you could identify during the survey. 
 
 ## Site visits
 
@@ -442,7 +446,7 @@ print(alpha_diff)
 
 ```
 
-We can see that, in general, the counts were within 4 species each visit.
+The difference between visits was on average 4 bird species.
 
 How about the difference in diversity detected between each visit? I.e. the beta diversity. 
 ```{r}
@@ -476,7 +480,7 @@ Although the total difference between the visits was small, the beta diversity w
 
 This is part of why we do repeat visits to site- to capture the diversity. Visits may differ by time of day (e.g. 6am or 7am) or weather. 
 
-## Richness and diversity across sites and communities
+## Species richness
 
 From here on we will use the total richness detected (i.e. total number of unique species across both visits).
 
@@ -508,7 +512,8 @@ communities <- data.frame(site = c("OG10", "OG9", "OG7", "OG5", "RF1",
                                         rep("Lower slope eucalypt forest", 5),
                                         rep("Coastal eucalypt forest", 4),
                                         rep("Coastal Casuarina forest", 3),
-                                        rep("Paddock", 4)))
+                                        rep("Paddock", 4))) %>%
+  mutate(community = as_factor(community))
 
 # assign communities to bird data
 birds_insite2 <- left_join(communities, birds_insite) %>%
@@ -532,13 +537,15 @@ birds_summary <- birds_insite2 %>% group_by(community) %>%
 print(birds_summary)
 
 # test if there is a difference in richness by community
-richness <- specnumber(birds_diversity)
+richness <- specnumber(birds_vegan)
 sp_aov <- aov(richness ~ community, data = communities)
 anova(sp_aov)
 
 ```
 
-Interesting! The moist gully rainforest had the highest species richness, with an average of 15.3 species. The paddock (unsuprisingly) had the lowest. There is no significant difference in bird species richness between the community types (Pr[>F]=0.8084). 
+Interesting! The moist gully rainforest had the highest species richness, with an average of 15.3 species. The paddock (unsuprisingly) had the lowest. There is no significant difference in bird species richness between the community types.
+
+## Beta diversity
 
 But as we know, richness doesn't tell us everything. What about beta diversity between the sites and communities?
 
@@ -616,7 +623,7 @@ We only detected Mistletoebird in the lower slope eucalypt forest. As the name s
 
 Despite the apparent 'lack' of 'habitat' in the paddocks, there are a number of birds that are found in the paddock and nowhere else. Different birds have different requirements, some of which include open grassland areas and some are resilient to degraded landscapes. For example, the Australasian Pipit is a grassland insectivore that is mostly usually on the ground in open pasture or native grassland. It nests on the ground in tussocks. 
 
-We only found Brown Cuckoo-Dove in the rainforest, which is unsurprising since they are a rainforest species (as well as wet sclerophyll) especially found along creeks and rivers. They are largely frugivores (eating fruit and berries, but also seeds), and can eat (and disperse) hard to digest fruits. 
+We only found Brown Cuckoo-Dove in the rainforest, which is unsurprising since they are a rainforest species (as well as wet sclerophyll) especially found along creeks and rivers. They are largely frugivores (eating fruit and berries, but also seeds), and can eat (and disperse) hard to digest fruits. They are an important fruit disperser for rainforest plants. 
 
 These are just a couple of examples of how unique species relate to the vegetation and landscape. You could look into more of the unique species' ecology for your report.
 
@@ -652,11 +659,13 @@ Note the y-axis is limited to a minimum of 0.6 to make this easier to read.
 
 The moist gully rainforest had the highest average Simpson's diversity index, which means it is more biodiverse in terms of both species richness and abundance. There was no significant in Simpson's diversity index among the communities.  
 
-## Birds and biomnetric features
+## Bird communities
 
-So far we have looked at the bird richness by the floristic communities. But what about the habitat features you collected data on during the biometric surveys? Birds choose where to be in the landscape based on features that they prefer or avoid. 
+**(This section is interesting but you don't have to include it in your report)**
 
-I'm going to start by running a constrained ordination- this looks at the distribution of the bird community across environmental variables (in our case, biometric data). The type we are doing is called 'Canonical Correspondance Analysis' (CCA),
+So far we have looked at the bird richness by the floristic communities. But what about the bird communities? That is, which species tend to be together due to shared habitat features they prefer (or avoid). 
+
+We'll use a constrained ordination to determine bird communities. An ordination examines communities across space and a contrained ordination examines communities across specific environmental variables (in our case, biometric data). The type we are doing is called 'Canonical Correspondence Analysis' (CCA). 
 
 For more information on how this works you can use the same tutorial I did to produce this: https://rpubs.com/an-bui/vegan-cheat-sheet
 
@@ -687,15 +696,19 @@ ggplot() +
 
 ```
 
+A note: I've excluded the paddocks from this ordination. The paddock birds and biometrics were so distinct that it made it hard to see what was going on in the vegetated sites. 
+
 Awesome! Let's read this figure. You can essentially ignore the axes here (arbitrary numbers in ordination space). What we are interested in is the grouping of birds. What this figure shows us is how birds cluster in the landscape according to the vegetation features (at least the ones we measured). And it looks pretty good! Not all the birds are labelled because the ones in the middle are so overlapping (read: likely to co-occur) that they didn't get shown. 
 
 There are plenty of groupings I would expect to see here, for example Crimson Rosella, Galah, Laughing Kookaburra, Red Wattlebird and Superb Fairywren is a classic assemblage (and usually ones you see in places with human interference because all of those birds are resilient to modified and urban areas). 
-Likewise, Gang-Gang Cockatoo, Superb Lyrebird and Eastern Shriketit are a grouping that make sense because they are more sensitive to change and are likely to be in better 'quality' habitat (the Rainbow Lorikeet is an odditity here, they only landed in the site once, so this was more due to chance). 
+
+Likewise, Gang-Gang Cockatoo, Superb Lyrebird and Eastern Shriketit are a grouping that make sense because they are more specific in their habitat needs and were only found higher up the hill into the upper forest (the Rainbow Lorikeet is an odditity here, they only landed in the site once, so this was more due to chance). 
+
 As a final example, the cluster of birds around Yellow Thornbill is a likely community of the Casuarina forest (largely because there are more edges in this community type and the birds of this group like edges).
 
 ## Student estimates of bird richness
 
-And out of interest, how well did you do at estimating the bird richness at each site? Let's compare average expert and student counts. These are total (i.e. all within 50m and >50m). 
+And out of interest (you don't have to include it in your report), how well did you do at estimating the bird richness at each site? Let's compare average expert and student counts. These are total (i.e. all within 50m and >50m). 
 
 ```{r}
 # read in data
@@ -725,9 +738,316 @@ ggplot(birds_compare)+
 
 In general, you underestimated the total number of species- which is to be expected! It takes a lot of practice and patience to learn bird calls. I hope you enjoyed coming out on the bird surveys with us and I appreciated your enthusiasm despite the early start!
 
-Good luck with the report writing. 
+## Acoustic data
 
-FIN
+**(This section is interesting but you don't have to include it in your report)**
+
+You also surveyed the sites using acoustic meters. We collected data for two hours around dusk and dawn for one night. One of the benefits of acoustic meters is they can help sample diversity that otherwise would be missed in the time constraints of a five-minute count. The other benefit was to teach you how to use this kit and read sonograms! Let's see what we detected. First we'll look at the effect of time of day.
+
+```{r}
+# read in 
+acoustic <- read_excel("data/ENVS2018 kioloa acoustic data 2023.xlsx", sheet = 1) %>%
+  clean_names()
+
+acoustic_rich <- acoustic %>% group_by(site,time) %>%
+  summarise(richness = length(unique(common_name))) %>%
+  left_join(communities) %>%
+  mutate(type = "acoustic")
+
+# plot by site and dusk/dawn
+ggplot(acoustic_rich)+
+  geom_boxplot(aes(time, richness, fill = community))+
+  facet_wrap(~community)+
+  scale_fill_viridis_d()+
+  theme_minimal()
+
+# test difference dusk and dawn
+tod <- aov(richness ~ time, data = acoustic_rich)
+anova(tod)
+
+```
+
+There was no difference in the richness recorded between dusk and dawn. Note: only one paddock site (P10) had an acoustic meter.
+
+How did the richness detected on the acoustic meters compare with the bird surveys?
+
+```{r}
+# combine acoustic and expert bird counts
+acoustic_compare <- select(birds_richness, c(1,3)) %>%
+  rename(richness = 2) %>%
+  mutate(type = "expert") %>%
+  left_join(communities) %>%
+  full_join(select(acoustic_rich, !2))
+
+# plot comparison
+ggplot(acoustic_compare) +
+  geom_boxplot(aes(type, richness, fill = community))+
+  scale_fill_viridis_d()+
+  facet_wrap(~community)+
+  theme_minimal()
+
+# test difference
+aco <- aov(richness ~ type, data = acoustic_compare)
+anova(aco)
+
+```
+
+Wow! We detected significantly more bird species on the acoustic meters than in the 5-minute expert counts (only considering the species within the 50m radius). 
+
+A caveat here is that we simply used 'loudness' of the acoustic data as a proxy for distance, so the two aren't directly comparable. For example, the Wood Duck heard on the acoustic meter might have been further away than 50m because their 'waaaaa' call carries. We could have tested this by playing a known volume tone at 50m from the meters to figure out how 'loud' something needs to be to be in the site.
+
+You can imagine the addition of time to a bird survey as a curve of diminishing returns- you add more time, you get more species, but at a decaying rate of increase over time. So we could achieve higher richness counts by doing say, a 15-minute or even 1-hour bird survey (imagine that!), but that would not be a good use of people-time. This is where acoustic meters can come in handy. 
+
+Another important use of acoustic meters is to detect rare things that don't call often. If you were tasked with finding a Night Parrot, you would have to spend 1000s of hours in the remote spinifex desert to potentially hear a short call; which is why agencies like Parks and NGOs such as AWC instead deploy acoustic meters and then use AI to scan through in search of the target species. 
+
+How about the beta diversity between the acoustic and expert counts?
+
+```{r}
+# for loop of birds only found in that community
+aco_beta <- data.frame()
+species2 <- species %>% filter(present_in==1)
+
+for (i in 1:24) {
+uni_exp <- species2 %>% filter(site == sites[i])
+uni_aco <- acoustic %>% filter(site == sites[i])
+
+diff1 <- setdiff(uni_exp$common_name, uni_aco$common_name) %>%
+  as.data.frame() %>%
+  rename(unique = 1) %>%
+  mutate(source = "expert",
+         site = sites[i])
+diff2 <- setdiff(uni_aco$common_name, uni_exp$common_name)%>%
+  as.data.frame() %>%
+  rename(unique = 1) %>%
+  mutate(source = "acoustic",
+         site = sites[i])
+
+aco_beta <- rbind(aco_beta, diff1, diff2)
+}
+
+aco_beta2 <- aco_beta %>%
+  group_by(site, source) %>%
+  summarise(beta = length(unique(unique))) %>%
+  left_join(communities)
+
+# plot difference
+ggplot(aco_beta2)+
+  geom_boxplot(aes(source, beta, fill=community))+
+  scale_fill_viridis_d()+
+  facet_wrap(~community)+
+  theme_minimal()
+
+# test difference
+aco_b <- aov(beta ~ source, data = aco_beta2)
+anova(aco_b)
+
+```
+
+While we found unique species between both methods, there were significantly more unique species found on the acoustic meters that we didn't detect during the expert counts (if we only consider expert counts within the site- this is important because if we include birds outside of the sites we actually detect more birds with the expert surveys. The people can hear further than the units). 
+
+Aside from the study sits, were there any unique species found only on the expert counts or acoustic meters across the whole campus?
+
+```{r}
+b_exp <- setdiff(species2$common_name, acoustic$common_name) %>%
+  as.data.frame() %>%
+  rename(unique = 1) %>%
+  mutate(source = "expert")
+
+b_aco <- setdiff(acoustic$common_name, species2$common_name)%>%
+  as.data.frame() %>%
+  rename(unique = 1) %>%
+  mutate(source = "acoustic")
+
+aco_beta3 <- rbind(b_exp, b_aco)
+
+print(aco_beta3)
+  
+```
+
+Cool! Some of these species were detected during the bird surveys but not within the site itself (i.e. heard at a distance instead of within 50m). For example, we heard King Parrots during the expert counts but not in the sites. 
+
+What about out of the sites? Let's sum up the total richness of birds recorded across the whole campus from both methods
+
+```{r}
+# all bird species 
+species_expert <- data.frame(species = unique(birds_expert$common_name),
+                             type = "expert")
+species_acoustic <- data.frame(species = unique(acoustic$common_name),
+                             type = "acoustic")
+
+species_all <- rbind(species_expert, species_acoustic) %>%
+  mutate(type = ifelse(duplicated2(species, bothWays=TRUE)==TRUE,"both",type)) %>%
+  #remove the frog
+  filter(!species == "Common Eastern Froglet") %>%
+  distinct()
+
+# make gt table
+species_all %>% 
+  group_by(type) %>% 
+  gt() %>%
+  tab_options(data_row.padding = px(1)) %>%
+  # change font size
+  tab_style(style = cell_text(size = px(12)), locations = cells_column_labels()) %>%
+  tab_style(style = cell_text(size = px(10)), locations = cells_body())
+  
+species_all2 <- species_all %>%
+  group_by(type) %>%
+  summarise(count = length(species))
+
+# plot
+ggplot(species_all2,aes(1,count,fill=type))+
+  geom_bar(stat="identity")+
+  scale_fill_viridis_d()+
+  theme_minimal()+
+    theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank())
+
+```
+
+We detected a total of 76 bird species. Of these, 47 were detected on both the acoustic meters and in the bird surveys, where 23 were only detected on the expert counts and 6 in the acoustics. 
+
+Species that were uniquely recorded on the acoustic meters (and not in the total expert counts including out of sites) were: Bassian Thrush, Bell Miner, Crescent Honeyeater, Rufous Fantail, Shining Bronze-Cuckoo and White-bellied Sea Eagle (which have a nest in site RG1 were they were recorded). These 6 species were added to the total site richness thanks to the acoustic meter!
+
+
+# Other wildlife results
+
+You don't have to report on this section, but we wanted to show you some interesting findings. 
+
+## Cameras
+
+Let's have a look at how our camera results compared with previous years. 
+
+```{r}
+# groups
+mammals <- c("Eastern Grey Kangaroo", "Swamp Wallaby", "Red-necked Wallaby", 
+             "Short-beaked Echidna", "Common Wombat",
+             "Brush-tailed Possum", "Krefft's Glider", 
+             "Black Rat", "Bush Rat", "Rat", "Swamp Rat", "House Mouse",
+             "Long-nosed Bandicoot", "White-footed Dunnart", "Brown Antechinus",
+             "Cat", "Red Fox", "Pig" , "Sheep", "Cow")
+
+# read in data
+camera <- read_excel("data/ENVS2018 kioloa data 2017-2023.xlsx", sheet = 2) %>%
+  clean_names() %>%
+  distinct() %>%
+  #remove skinks
+  filter(!common_name == "Delicate Sun-skink") %>%
+  mutate(taxa = ifelse(common_name %in% mammals, "mammal", "bird")) %>%
+  filter(taxa == "mammal") %>%
+  mutate(common_name = factor(common_name, levels = mammals))
+
+# plot mammals
+ggplot(camera)+
+  geom_point(aes(year, common_name, colour = common_name), size = 4)+
+  scale_colour_viridis_d()+
+  theme_minimal()+
+  theme(legend.position= "none")+
+  theme(axis.title.y=element_blank())+
+  scale_y_discrete(limits=rev)+
+  scale_x_continuous(n.breaks = 7)+
+  coord_fixed(ratio = 0.6)
+
+```
+
+Here we can see which species were seen in which years. The occurrence of these species might relate to environmental conditions (e.g. drought). Note: the cameras were not placed in rainforest and coastal locations in 2017-2020, only upper and lower slope eucalypt forest and paddock. Also note there was a bushfire in the 2019/2020 Summer. No data was collected in 2021 (covid-19). 
+
+## Herpetofauna
+
+Let's do the same thing with the reptiles and frogs (from tin/tile and opportunistic records).
+
+```{r}
+# read in data
+herpsp <- c("Eastern Small-eyed Snake", "Red-bellied Black Snake", "Diamond Python",
+            "Jacky Dragon", "Blue-tongued Lizard", "Delicate Sun-skink", 
+            "Weasel Skink", "Skink sp", "Whistling Tree Frog", "Jervis Bay Tree Frog",
+            "Eastern Dwarf Tree Frog", "Southern Green Stream Frog",
+            "Screaming Tree Frog", "Striped Marsh Frog", "Tyler's Toadlet", 
+            "Common Eastern Froglet", "Haswell's Froglet")
+
+herps <- read_excel("data/ENVS2018 kioloa data 2017-2023.xlsx", sheet = 1) %>%
+  clean_names() %>%
+  select(2:3) %>%
+  # remove mice
+  filter(!common_name == "House Mouse") %>%
+  distinct() %>%
+  mutate(common_name = factor(common_name, levels = herpsp))
+
+# plot
+ggplot(herps)+ 
+  geom_point(aes(year, common_name, colour = common_name), size = 4)+
+  scale_colour_viridis_d()+
+  theme_minimal()+
+  theme(legend.position= "none")+
+  theme(axis.title.y=element_blank())+
+  scale_y_discrete(limits=rev)+
+  scale_x_continuous(n.breaks = 7)+
+  coord_fixed(ratio = 0.6)
+
+```
+
+This is really an indication of the survey effort for herpetofauna! In 2018-2020 we only had tin/tile (AKA substrate) checks (which were done by students instead of expert observers) whereas in 2022 we started recording incidental sightings and doing the pond frog surveys. 
+
+I wonder how these results compare with the frog diversity in the pre-readings?
+
+## Birds over time
+
+Lastly, let's look at how the bird diversity has changed over the years (remember you do not need to include this in your report). We'll only be able to compare over the sites labelled 'OG', 'RG' and 'P' since these are consistent over all years ('RF' and 'C' added in 2022).
+
+```{r}
+# read in data
+sites_consistent <- c("P3", "RG2", "RG1", "OG7", "RG10", "OG1", "OG5", "OG10", "OG9", "RG8", "P10", "RG3", "P2", "P1") 
+
+birds_years <- read_excel("data/ENVS2018 kioloa data 2017-2023.xlsx", sheet = 4) %>%
+  clean_names() %>%
+  # remove birds outside of survey points
+  filter(radius == "0-50") %>%
+  select(c(1,2,4)) %>%
+  # filter to sites in all years
+  filter(site %in% sites_consistent)
+
+# summarise by year and site
+birds_year_sum <- birds_years %>% group_by(year, site) %>%
+  summarise(count = length(unique(species))) %>%
+  mutate(year = as.factor(year),
+         site = as.factor(site))
+
+# plot by year
+ggplot(birds_year_sum)+
+  geom_boxplot(aes(year, count, group=year, fill = year))+
+  scale_fill_viridis_d()+
+  theme_minimal()
+
+```
+
+And over the years between sites.
+
+```{r}
+# plot by site
+ggplot(birds_year_sum)+
+  geom_point(aes(year, count, colour = site))+
+  geom_line(aes(year, count, group = site, colour = site))+
+  scale_colour_viridis_d()+
+  theme_minimal()
+```
+
+And lastly, some summary data
+
+```{r}
+#summary
+birds_year_sum %>%
+  group_by(year) %>%
+  summarise(mean = mean(count),
+            max = max(count),
+            min = min(count),
+            sd = sd(count)) %>% 
+  gt() %>%
+  tab_style(style = cell_text(size = px(12)), locations = cells_body())
+```
+
+I hope you enjoyed reading this data summary. This is the first time we have done the report this way so it was for for me to look at all the data!
+
+Good luck with the report writing!
 
 # Session information
 
