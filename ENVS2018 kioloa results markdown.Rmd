@@ -1,7 +1,7 @@
 ---
 title: "ENVS2018 Environmental Science Field School: Kioloa analyses"
 author: "Shoshana Rapley, Saul Cunningham"
-date: "20 September 2023"
+date: "20 September 2024"
 output:
   html_document:
     toc: true
@@ -157,7 +157,7 @@ Excellent!
 
 ## Biometric values
 
-Now that we have our groupings, let's take a look at the biometric data you collected.We will highlight cells for a few key variables based on their values to make it easier to see what's going on. 
+Now that we have our groupings, let's take a look at the biometric data you collected. We will highlight cells for a few key variables based on their values to make it easier to see what's going on. 
 
 Note: paddock data is derived from 2022 (since you didn't collect it this year). 
 
