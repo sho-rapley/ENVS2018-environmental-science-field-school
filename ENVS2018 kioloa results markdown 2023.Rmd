@@ -1,7 +1,7 @@
 ---
 title: "ENVS2018 Environmental Science Field School: Kioloa analyses"
 author: "Shoshana Rapley, Saul Cunningham"
-date: "20 September 2024"
+date: "20 September 2023"
 output:
   html_document:
     toc: true
