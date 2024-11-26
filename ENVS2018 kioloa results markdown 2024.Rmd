@@ -14,7 +14,7 @@ output:
     code_folding: hide
 editor_options: 
   chunk_output_type: console
-knit: (function(inputFile, encoding) { rmarkdown::render(inputFile, encoding = encoding, output_file = file.path(dirname(inputFile), 'ENVS2018 Kioloa Report Results.html')) })
+knit: (function(inputFile, encoding) { rmarkdown::render(inputFile, encoding = encoding, output_file = file.path(dirname(inputFile), 'ENVS2018 Kioloa Report Results 2024.html')) })
 ---
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(warning=FALSE, message=FALSE)
