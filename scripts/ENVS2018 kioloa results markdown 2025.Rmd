@@ -1,7 +1,7 @@
 ---
 title: "ENVS2018 Environmental Science Field School: Kioloa analyses"
 author: "Shoshana Rapley, Saul Cunningham"
-date: "17 September 2025"
+date: "19 September 2025"
 output:
   html_document:
     toc: true
@@ -14,17 +14,18 @@ output:
     code_folding: hide
 editor_options: 
   chunk_output_type: console
-knit: (function(inputFile, encoding) { rmarkdown::render(inputFile, encoding = encoding, output_file = file.path(dirname(inputFile), 'ENVS2018 Kioloa Report Results 2024.html')) })
+knit: (function(inputFile, encoding) { rmarkdown::render(inputFile, encoding = encoding, output_file = file.path(dirname(inputFile), '../results/ENVS2018 Kioloa Report Results 2025.html')) })
 ---
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(warning=FALSE, message=FALSE)
+knitr::opts_knit$set(root.dir = here::here())
 ```
 
 # Background
 
-The purpose of the Kioloa week report is to report on the patterns of biodiversity we observed. In particular, you should examine the composition and structure of different plant communities at Kioloa, whether animal (bird) communities also differ, and consider how these patterns relate to the underlying soils and geology.
+For your report, we would like you to discuss the patterns of biodiversity you observed. In particular, you should examine the composition and structure of different plant communities at Kioloa, whether animal (especialy bird) communities also differ, and consider how these patterns relate to the underlying soils and geology.
 
-We are excited to share the whole-class survey results with you all, because there are some really interesting patterns here. Keep in mind when writing the reports that we want you to use this data summary as source material. We are not expecting that you do further, more complex analyses. You can focus on the summary data that we have provided. You may also use the figures/graphs from this markdown in your report (no citation required).
+We are excited to share the whole-class survey results with you all, because there are some really interesting patterns here. Keep in mind when writing the reports that we want you to use this data summary as source material. We are not expecting that you do further, more complex analyses (but you can if you really want). You can focus on the summary data that we have provided. You may also use the figures/graphs from this markdown in your report (no citation required).
 
 Also you are not required to report on every piece of data. Given that we have more than 100 species in the list and 14 habitat measures, this would dilute the message of the report. Keep your focus on the data that show patterns of interest. Try to pick a narrative from these data that you find interesting and that you can explain within the constraints of the word count. 
 
@@ -42,70 +43,104 @@ pacman::p_load(dplyr, gdata, ggplot2, ggrepel, gt, gtExtras, janitor, lme4, lubr
 
 # Vegetation communities
 
-We collected vegetation data using the biometric tool methodology. This included compositional elements (e.g. overstory trees) and functional elements (e.g. woody debris). 
-
 ## Floral composition
 
 Let's start by looking at a matrix of the floral composition. 
 
-Before analysing the data we made a few corrections to what we believe were data entry errors (details can be provided on request). We then organised the data in a way that allowed us to identify the some different plant communities. 
+We have used the results of your survey of abundant plant species in the sites to describe plant communities.
 
-Here is how to read the table: Each row is a plant species and each column is a site.  In the cells we have marked o (overstorey) m (mid-storey) and g (ground layer) to show where the species occurs.
+The idea here is to recognise that there are sets of sites that have some important similarities in terms of the plant species in them, especially those more abundant species that help to define the vegetation structure. This is not exactly the same as the plant community classification that you might find on other sources, such as on “Trees Near Me” (https://treesnearme.app/) because we have based it on our own local survey of sites. That’s is OK, because plant communities are ultimately a human construct that we use for descriptive purposes – they don’t have a strict definition that would make any one classification “correct”.
 
-The vertical bands of colour should help you to see the six plant communities. Species that help define particular communities are highlighted with blocks of colour. The ordering from top to bottom is arranged to make the associations clearer (to arrange the blocks) so it is not perfectly arranged into overstory, mid-storey understorey. The functional group in the first column helps you see what kind of plant it is, and the “observation” in the last column explains how the species relate to the plant communities that we identified.
+Each row is a plant species and each column is a site. In the cells we have marked O (overstory) M (midstory) and G (ground layer) to show where the species occurs.
+
+To read the table, look at the vertical blocks of colour that highlight the different plant communities, and the darker colours that highlight the plants that characterise each community. There are six plant communities (and one transitional zone) which are described after the table.
+
+The ordering from top to bottom is arranged to make the associations clearer (to arrange the blocks) so it is not perfectly arranged into overstory, midstory, and understory. 
+
+The functional group in the first column helps you see what kind of plant it is. Also note the horizontal coloured band that highlights the presence of Acacia in the midstory of CBF, SGBF and RFG.
+
+The tally shows how many sites each species was found in.
 
 When you report on the analysis remember to look at where these sites occur in relation to each other and how this relates to the underlying soil, the topography and the distance from the ocean. Also examine how the species composition relates to the structural characteristics that are described by the biometric survey.
 
 ```{r}
-# read in the data 
-comp_data <- read_excel("data/ENVS2018 kioloa flora composition 2024.xlsx", skip = 1)
+# read in the data - skip the top row, will create this with spanner headers
+comp_data <- read_excel("data/ENVS2018 kioloa flora composition 2025.xlsx", skip = 1) %>%
+  # and drop notes column because too compact in table
+  select(-27)
 
 # create a pretty table using the package 'gt'
 comp_table <- gt(comp_data) %>%
   tab_options(data_row.padding = px(1)) %>%
   # add header
   tab_header(title = "Floral composition", 
-             subtitle = "ENVS2018 Student data Kioloa 2024") %>%
+             subtitle = "ENVS2018 Student data Kioloa 2025") %>%
   # replace NAs with blanks
   tab_style(cell_text(style = "italic"),locations = cells_body(columns = 2)) %>%
   sub_missing(missing_text = " ") %>%
-   # add column colours for community type (using a 6 colour viridis scale with transparency)
+   # add column colours for community type (using a 7 colour viridis scale with a = 0.2 transparency)
   tab_style(style = list(cell_fill(color = "#44015433")),
-    locations = cells_body(columns = 3:5)) %>%
-  tab_style(style = list(cell_fill(color = "#41448733")),
-    locations = cells_body(columns = 6:8)) %>%  
-  tab_style(style = list(cell_fill(color = "#2A788E33")),
-    locations = cells_body(columns = 9:12)) %>%
-  tab_style(style = list(cell_fill(color = "#22A88433")),
-    locations = cells_body(columns = 13:18)) %>%
-  tab_style(style = list(cell_fill(color = "#7AD15133")),
-    locations = cells_body(columns = 19:22)) %>%
+    locations = cells_body(columns = 3:6)) %>%
+  tab_style(style = list(cell_fill(color = "#443A8333")),
+    locations = cells_body(columns = 7:9)) %>%  
+  tab_style(style = list(cell_fill(color = "#31688E33")),
+    locations = cells_body(columns = 10:12)) %>%
+  tab_style(style = list(cell_fill(color = "#21908C33")),
+    locations = cells_body(columns = 13)) %>%
+  tab_style(style = list(cell_fill(color = "#35B77933")),
+    locations = cells_body(columns = 14:16)) %>%
+  tab_style(style = list(cell_fill(color = "#8FD74433")),
+    locations = cells_body(columns = 17:19)) %>%
   tab_style(style = list(cell_fill(color = "#FDE72533")),
-    locations = cells_body(columns = 23:26)) %>%
-  # add row/column colours for clusters (using 6 colour viridis scale)
+    locations = cells_body(columns = 20:25)) %>%
+  # add row/column colours for clusters (using 7 colour viridis scale - transparency for less important groups)
   tab_style(style = list(cell_fill(color = "#440154FF"), cell_text(color = "white")),
-    locations = cells_body(columns = 3:5, rows = c(1, 44:49))) %>%
-  tab_style(style = list(cell_fill(color = "#414487FF"), cell_text(color = "white")),
-    locations = cells_body(columns = 6:8, rows = c(2:4, 26, 38:43))) %>%  
-  tab_style(style = list(cell_fill(color = "#2A788EFF"), cell_text(color = "white")),
-    locations = cells_body(columns = 9:12, rows = 50:54)) %>%
-  tab_style(style = list(cell_fill(color = "#22A884FF"), cell_text(color = "white")),
-    locations = cells_body(columns = 13:18, rows = 3:14)) %>%
-  tab_style(style = list(cell_fill(color = "#7AD151FF"), cell_text(color = "white")),
-    locations = cells_body(columns = 19:22, rows = c(3:4, 15:30))) %>%
+    locations = cells_body(columns = 3:6, rows = c(42:51))) %>%
+  tab_style(style = list(cell_fill(color = "#443A83FF"), cell_text(color = "white")),
+    locations = cells_body(columns = 7:9, rows = c(1:10))) %>%  
+  tab_style(style = list(cell_fill(color = "#31688EFF"), cell_text(color = "white")),
+    locations = cells_body(columns = 10:12, rows = c(11:16))) %>%
+  tab_style(style = list(cell_fill(color = "#21908CFF"), cell_text(color = "white")),
+    locations = cells_body(columns = 13, rows = c(12:18))) %>%
+  tab_style(style = list(cell_fill(color = "#35B779FF"), cell_text(color = "white")),
+    locations = cells_body(columns = 14:16, rows = c(16:17))) %>%
+  tab_style(style = list(cell_fill(color = "#8FD744FF"), cell_text(color = "white")),
+    locations = cells_body(columns = 17:19, rows = c(16:17))) %>%
   tab_style(style = list(cell_fill(color = "#FDE725FF"), cell_text(color = "black")),
-    locations = cells_body(columns = 23:26, rows = c(3:4, 32:36))) %>%
-  # add new community grouping names
-  tab_spanner(label = "Casuarina forest", columns = 3:5) %>%
-  tab_spanner(label = "Coastal Eucalypt forest", columns = 6:8) %>%
-  tab_spanner(label = "Grassland/paddock", columns = 9:12) %>%
-  tab_spanner(label = "Lower slope forest", columns = 13:18) %>%
-  tab_spanner(label = "Moist gully rainforest", columns = 19:22) %>%
-  tab_spanner(label = "Upper slope forest", columns = 23:26) %>%
+    locations = cells_body(columns = 20:25, rows = c(18:28))) %>%
+  # and secondary clusters with a = 0.6 transparency (starting from 3rd colour)
+  tab_style(style = list(cell_fill(color = "#31688E99"), cell_text(color = "white")),
+    locations = cells_body(columns = 10:12, rows = c(58:63))) %>%
+  tab_style(style = list(cell_fill(color = "#21908C99"), cell_text(color = "white")),
+    locations = cells_body(columns = 13, rows = c(58:63))) %>%
+  tab_style(style = list(cell_fill(color = "#35B77999"), cell_text(color = "white")),
+    locations = cells_body(columns = 14:16, rows = c(19:23, 30:32, 58:63))) %>%
+  tab_style(style = list(cell_fill(color = "#8FD74499"), cell_text(color = "white")),
+    locations = cells_body(columns = 17:19, rows = c(19:23, 30:32, 58:63, 37:41))) %>%
+  tab_style(style = list(cell_fill(color = "#FDE72599"), cell_text(color = "black")),
+    locations = cells_body(columns = 20:25, rows = c(16:17, 29:36, 58:63))) %>%
+  # add community grouping names
+  tab_spanner(label = "P", columns = 3:6) %>%
+  tab_spanner(label = "CAS", columns = 7:9) %>%
+  tab_spanner(label = "CBF", columns = 10:12) %>%
+  tab_spanner(label = "CBF*", columns = 13) %>%  
+  tab_spanner(label = "SGBF (Lower)", columns = 14:16) %>%
+  tab_spanner(label = "SGBF (Upper)", columns = 17:19) %>%
+  tab_spanner(label = "RFG", columns = 20:25) %>%
   # change tally colour
-  tab_style(style = list(cell_fill(color = "lightgrey")),
-    locations = cells_body(columns = 27)) %>%
- # change font size
+  tab_style(style = list(cell_fill(color = "grey90")),
+    locations = cells_body(columns = 26)) %>%
+  # and acacia/proteacea cell colours
+  tab_style(style = list(cell_fill(color = "grey90")),
+    locations = cells_body(columns = 2, rows = c(37, 41, 58:63))) %>%
+  # add footnotes
+  tab_footnote(footnote = "CBF to SGBF transition zone.",
+    locations = cells_column_labels(columns = 13)) %>%
+  tab_footnote(footnote = "Team F report that although Bangalay was not in the diversity plot, it was immediately adjacent",
+    locations = cells_body(columns = 2, rows = 11)) %>%
+  tab_footnote(footnote = "Family Proteaceae",
+    locations = cells_body(columns = 2, rows = c(37, 41))) %>%
+  # change font size
   tab_style(style = cell_text(size = px(12)), locations = cells_column_labels()) %>%
   tab_style(style = cell_text(size = px(10)), locations = cells_body()) %>%
   tab_style(style = cell_text(size = px(11)), locations = cells_column_spanners())
@@ -114,24 +149,51 @@ comp_table
 
 ```
 
+**P: Paddock/Grassland**
 
-**CAS: Casuarina forest**
-This community has a *Casuarina glauca* overstory. It is without any other canopy tree species and is missing most of the shrubs that are common elsewhere (e.g. *Acacia* species). There are also some shrub and forb species found here that were not seen in other sites.
+This community is characterised by the absence of overstory and midstory. The ground layer has grasses, sedges and some forbs (see purple block). No other functional groups were reported (i.e. no trees, small trees, shrubs).
 
-**CEF: Coastal Eucalypt forest**
-This is the only community where *Eucalyptus botryoides* is common in the overstory (though *Corymbia maculata* and *Eucalytptus pilularis* occur also). The mid-storey is characterised by *Acmena smithii* and a mix of other species including *Acacia* species. The ground layer has abundant sedges.
+**CAS: Casuarina Forest**
 
-**P: Grassland/paddock**
-This community is characterised by the absence of overstorey and mid-storey. The ground layer has grasses, sedges, rushes and some forbs. The species that were abundant here and not elsewhere were exotic forbs.
+This community has a *Casuarina glauca* overstory. It is without any other canopy tree species and is missing most of the shrubs that are common elsewhere (e.g. *Acacia* species). There are also some shrub and forb species found here that were not seen in other sites. Forbs were reported in the ground layer (including *Violoa hederaceae* in all sites). Two vine species occurred here that were not reported in any other sites (*Parsonsia straminae*, *Tylophora barbata*). No *Acacia* were reported, whereas *Acacia* were abundant in the midstory of all other plant communities (except the paddock).
 
-**LSF: Lower slope forest**
-This community has a canopy of *Corymbia maculata*, *Eucalyptus pilularis* and in one site also *Eucalyptus tereticornis*. The mid-storey has many shrubs and small trees including *Acacia* species. *Acacia maidenii* was found in this community but not elsewhere. There are a range of mid and ground layer species that are characteristic of rainforest and upper slope forest sites that are missing from this forest type (such as *Acmena smithii*, *Livistona australis*, and the rainforest-y species).
+**CBF: Coastal Bangalay Forest**
 
-**RF: Moist gully rainforest**
-This community has an emergent overstorey of *Corymbia maculata* and *Eucalyptus pilularis* (like much of the forest in the area) but it also has a number of shorter overstorey and mid-storey species not common in the other communities. The ground layer has climbers (*Hibbertia* species, *Kennedia rubicunda*, *Cissus*, *Cynanchum elegans*) and ferns. There are also a number of species found here that also occur in upper slope forest such as *Acmena smithii*, *Livistona australis*, *Prostanthera sp.*.
+Defined by the presence of *Eucalyptus botryoides* (Bangalay) in the overstory, alongside *Eucalyptus tereticornis* and *Corymbia maculata*.  Other species found in these sites but not elsewhere include *Rubus parvifolius*, *Pultenaea blakelyi*, and *Notelaea longifolia* in midstory and ground layers.
 
-**USF: Upper slope forest**
-This community has an overstory of *Corymbia maculata* and *Eucalyptus pilularis* and a well-developed mid-storey that includes many shrubs and short trees that are also found in the rainforest. There are also a few species that occur here but not in the other communities.
+One site did not fit neatly into any one category, which is to be expected given that plant communities do not usually have sharp boundaries. Site 11 had *Eucalyptus tereticornis* and *Notelaea longifolia*, in common with CBF, and but no *Eucalytpus botryoides* were reported. It shared some canopy species with SBGF, but the understory had relatively few of the species characteristic of the SBGF. We showed this site in a distinct colour in the floristics table, so you could see the transition, but for the rest of the analyses site 11 is included in the category CBF.
+
+**SGBF: Spotted Gum/Blackbutt Forest**
+
+These sites are defined by only two dominant overstory tree species: *Corymbia maculata* (Spotted Gum) and *Eucalyptus pilularis* (Blackbutt) with *Acacia* species always reported to be abundant in the midstory. Some of the mid and ground layer species are shared with the RFG sites. This community is further broken into Lower and Upper based on slope position and elevation.
+
+  **Lower slope SGBF**
+  
+The lower SGBF sites (7, 13, and 18) are relatively flat and have smaller younger trees than the upper slopes (in part due to the history of logging, where the flat accessible areas were preferentially logged). Although the upper and lower slope sites have similar species composition, they have quite different biometric values. 
+
+  **Upper slope SGBF**
+  
+The upper SGBF sites (22, 23, 24) are on located on the hill slope, going up in elevation from 22 -> 23 -> 24 (which is located on the knoll). Some of these sites have some species that favour lower nutrient environments, such as the two species in the family Proteaceae (*Banksia spinulosa*, *Persoonia linearis*) and the cycad *Macrozamia communis*.
+
+**RFG: Rainforest Gully**
+
+This community has an emergent overstory of *Corymbia maculata* and *Eucalyptus pilularis* (with the exception of site 15) but it also has a number of shorter overstory and midstory species not common in the other communities. These sites are defined by the occurrence of a diverse set of species known to occur in rain forest elsewhere in the region (*Diospyros australis*, *Tristaniopsis collina*, *Synoum glandulosum*, *Eupomatia laurina*, *Hibbertia dentata*, *Clerodendrum tomentosum*, *Ficus coronata*, *Pittosporum revolutum*, *Callicoma serratifolia*) and two species known to occur around watercourses (*Elaeocarpus reticulatus*, and *Sannantha pluriflora*).
+
+There are also some species reported in RFG sites but not other sites that are not rainforest specialists (e.g. *Indigofera australis*, *Kunzea ambigua*, and *Dodonaea triquetra*). Some of the species characteristic of the rain forest were also reported in the SBGF, but not other communities (e.g. *Tristaniopsis collina*, *Synoum glandulosum*, *Eupomatia laurina*, *Hibbertia dentata*, *Clerodendrum tomentosum*, *Leptospermum polygalifolium*, *Leucopogon juniperinus*, and Ferns). This sharing of species reflects that wet sclerophyll forests (such as SGBF) generally have an overstory of *Eucalyptus* and related trees, and an understory including some rainforest-loving species. 
+
+Plantnet notes on rainforest species distribution (https://plantnet.rbgsyd.nsw.gov.au/):
+
+- *Diospyros australis*:	Widespread in warmer rainforest; north from Batemans Bay
+- *Tristaniopsis collina*: Grows along rainforest margins and in moist situations in sclerophyll forest
+- *Synoum glandulosum*: Widespread in warmer rainforest
+- *Eupomatia laurina*: Widespread in or near warmer rainforest
+- *Hibbertia dentata*: Mainly in open forest or on margins of rainforest
+- *Clerodendrum tomentosum*: Grows in or on the margins of warmer rainforest
+- *Ficus coronata*: Often along creeks, in rainforest and open country
+- *Pittosporum revolutum*: Grows in rainforest, wet sclerophyll forest, and in dry sclerophyll forest in the south of the range
+- *Callicoma serratifolia*: Grows mainly in rainforest and on its margins
+- *Elaeocarpus reticulatus*: Mostly in gullies or along watercourses
+- *Sannantha pluriflora*: Most commonly grows in eucalypt forest close to watercourses
 
 ## Biometric values
 
@@ -139,9 +201,9 @@ Now that we have our floristic community groupings, let's take a look at the bio
 
 A few notes:
 
+* The Spotted Gum - Blackbutt forest (SGBF) is split into lower and upper (on site elevation) and you will notice they differ in their biometric values.
 * Site 14 was not surveyed in 2025
-* Sedge, fern and tree cover were collected at some but not all sites, and are included in 'Other' for the overall percent cover ranking. 
-* Sedge and fern were high value cover types in some sites and have been highlighted, but cannot be directly compared with other sites because not reported does not mean they weren't there. 
+* Sedge, fern and tree cover were collected at some but not all sites, so cannot be directly compared between sites (because not reported does not mean they weren't there). They are included in 'Other' for the overall percent cover ranking.
 
 ```{r}
 # read in data
@@ -150,7 +212,8 @@ biometric_data <- read_excel("data/ENVS2018 kioloa biometric 2025.xlsx") %>%
   select(-1) %>%
   # drop site 14 which wasn't surveyed in 2025
   filter(!Site == 14) %>%
-  # sort by community
+  # custom sort by community to match floristics table
+  mutate(Community = factor(Community, levels = c("P", "CAS", "CBF", "SGBF-L", "SGBF-U", "RFG"))) %>%
   arrange(Community)
 
 # make table in gt
@@ -161,7 +224,7 @@ biometric_table <- gt(biometric_data) %>%
   tab_style(style = cell_text(size = px(10)), locations = cells_body()) %>%
   # add header
   tab_header(title = "Biometric data", 
-             subtitle = "ENVS2018 Student data Kioloa 2023") %>%
+             subtitle = "ENVS2018 Student data Kioloa 2025") %>%
   # format percentages to display %
   fmt_percent(columns = 3:16, decimals = 1) %>%
   # add data grouping labels
@@ -169,19 +232,23 @@ biometric_table <- gt(biometric_data) %>%
   tab_spanner(label = "Percent cover (some sites)", columns = 11:13) %>%
   tab_spanner(label = "Tree cover", columns = 14:16) %>%
   tab_spanner(label = "Feature counts", columns = 17:19) %>%
-  # add row colours for community type (using a 7 colour viridis scale with transparency)
-  tab_style(style = list(cell_fill(color = "#44015433")),
-    locations = cells_body(rows = 1:3, columns = 1:2)) %>%
-  tab_style(style = list(cell_fill(color = "#41448733")),
-    locations = cells_body(rows = 4:6, columns = 1:2)) %>%  
-  tab_style(style = list(cell_fill(color = "#2A788E33")),
-    locations = cells_body(rows = 7:9, columns = 1:2)) %>%
-  tab_style(style = list(cell_fill(color = "#22A88433")),
-    locations = cells_body(rows = 10:15, columns = 1:2)) %>%
-  tab_style(style = list(cell_fill(color = "#7AD15133")),
-    locations = cells_body(rows = 16:19, columns = 1:2)) %>%
-  tab_style(style = list(cell_fill(color = "#FDE72533")),
-    locations = cells_body(rows = 20:23, columns = 1:2)) %>%
+  tab_style(style = cell_text(size = px(14)), # Set font size to 14 pixels
+    locations = cells_column_spanners()) %>%
+  # add row colours for community type (using a 7 colour viridis scale with 0.5 transparency)
+  tab_style(style = list(cell_fill(color = "#44015480")),
+    locations = cells_body(rows = 1:4, columns = 1:2)) %>%
+  tab_style(style = list(cell_fill(color = "#443A8380")),
+    locations = cells_body(rows = 5:7, columns = 1:2)) %>%  
+  tab_style(style = list(cell_fill(color = "#31688E80")),
+    locations = cells_body(rows = 8:10, columns = 1:2)) %>%
+  tab_style(style = list(cell_fill(color = "#21908C80")),
+    locations = cells_body(rows = 11, columns = 1:2)) %>%
+  tab_style(style = list(cell_fill(color = "#35B77980")),
+    locations = cells_body(rows = 12:14, columns = 1:2)) %>%
+  tab_style(style = list(cell_fill(color = "#8FD74480")),
+    locations = cells_body(rows = 15:17, columns = 1:2)) %>%
+  tab_style(style = list(cell_fill(color = "#FDE72580")),
+    locations = cells_body(rows = 18:23, columns = 1:2)) %>%
   # colour columns according to values
   # Grass > 40%
    tab_style(cell_fill(color = "#F9E3D6"),
@@ -208,12 +275,12 @@ biometric_table <- gt(biometric_data) %>%
     locations = cells_body(columns = Tree, rows = is.na(Tree == TRUE))) %>%
   tab_style(cell_text(color = "grey"),
     locations = cells_body(columns = Trees, rows = is.na(Trees == TRUE))) %>%
-  # Midstory > 15%
+  # midstory > 15%
    tab_style(cell_fill(color = "#F9E3D6"),
     locations = cells_body(columns = Midstory, rows = Midstory > .15)) %>%
    tab_style(cell_fill(color = "#F2F2F2"),
     locations = cells_body(columns = Midstory, rows = Midstory < .15)) %>%
-  # Midstory + over > 60%
+  # midstory + over > 60%
    tab_style(cell_fill(color = "#F9E3D6"),
     locations = cells_body(columns = Cover, rows = Cover > .6)) %>%
    tab_style(cell_fill(color = "#F2F2F2"),
@@ -247,26 +314,36 @@ biometric_table
 
 That's given us a good overview of how the biometric features vary by community type. Let's now summarise and visualise the data as boxplots. A boxplot shows the mean (middle line of the box), quartiles (the box and whiskers) and outliers (dots) and are useful for comparing quantitative data among groups. 
 
+Note: we are lumping the CBF transiton site 11 in with CBF for these analyses. 
+
 ```{r}
 biometric_data2 <- biometric_data %>%
   # clean names
   clean_names() %>%
   # convert percentages to 0-100
-  mutate(across(3:16, ~ .x * 100)) %>%
-  # order the factors (by appearance) to match the table colour palette
-  mutate(community = as_factor(community))
+  mutate(across(3:16, ~ .x * 100))
 
 # break into ground cover data and convert to long format for graphing
 cover <- select(biometric_data2, -c(11:16)) %>%
   pivot_longer(cols = 3:10, names_to = "feature", values_to = "percent") %>%
   mutate(feature = as_factor(feature))
 
+# palette
+community_palette <- c("P"            = "#440154FF", 
+                       "CAS"          = "#443A83FF",
+                       "CBF"          = "#31688EFF",
+                       "SGBF-L" = "#35B779FF",
+                       "SGBF-U" = "#8FD744FF",
+                       "RFG"          = "#FDE725FF")
+
 # create box plot for cover
 ggplot(cover) +
   geom_boxplot(aes(community, percent, fill = community)) +
-  scale_fill_viridis_d() +
+  scale_fill_manual(values = community_palette)+
   facet_wrap(~feature) +
-  theme_classic()
+  theme_classic()+
+  labs(x = "Community", y = "Cover %")+
+  ggplot2::theme(axis.text.x=element_blank(), axis.ticks.x=element_blank())
 
 ```
 
@@ -279,9 +356,11 @@ cover2 <- cover %>%
 # create box plot for cover
 ggplot(cover2) +
   geom_boxplot(aes(community, percent, fill = community)) +
-  scale_fill_viridis_d() +
+  scale_fill_manual(values = community_palette)+
   facet_wrap(~feature) +
-  theme_classic()
+  theme_classic()+
+  labs(x = "Community", y = "Cover %")+
+  ggplot2::theme(axis.text.x=element_blank(), axis.ticks.x=element_blank())
 
 ```
 
@@ -298,9 +377,11 @@ tree <- select(biometric_data2, c(1:2, 14:16)) %>%
 # create box plot for cover
 ggplot(tree) +
   geom_boxplot(aes(community, percent, fill = community)) +
-  scale_fill_viridis_d() +
+  scale_fill_manual(values = community_palette)+
   facet_wrap(~feature) +
-  theme_classic()
+  theme_classic()+
+  labs(x = "Community", y = "Cover %")+
+  ggplot2::theme(axis.text.x=element_blank(), axis.ticks.x=element_blank())
 ```
 
 Now let's look at the count biometric data: number of trees, number of mature trees (those that potentially have hollows) and length of logs.
@@ -319,11 +400,11 @@ count <- select(biometric_data2, -c(3:16)) %>%
 # create box plot for count
 ggplot(count) +
   geom_boxplot(aes(community, count, fill = community)) +
-  scale_fill_viridis_d() +
+  scale_fill_manual(values = community_palette)+
   facet_wrap(~feature) +
   theme_classic()+
-  # reanme primary axis and add secondary axis for CWD
-  scale_y_continuous(name = "Count of trees / length of CWD (m)")
+  labs(x = "Community", y = "Count of trees / length of CWD (m)")+
+  ggplot2::theme(axis.text.x=element_blank(), axis.ticks.x=element_blank())
 ```
 
 Great! You can use these graphs in your report. 
@@ -355,26 +436,24 @@ summary_stats_table <- gt(summary_stats) %>%
   tab_style(style = cell_text(size = px(10)), locations = cells_body()) %>%
   # add header
   tab_header(title = "Biometric data summary statistics", 
-             subtitle = "ENVS2018 Student data Kioloa 2023") %>%
+             subtitle = "ENVS2018 Student data Kioloa 2025") %>%
   # drop trailing zeros
   fmt_number(drop_trailing_zeros = TRUE) %>%
   # format percentages to display %
   fmt_percent(rows = c(1,3,5,7,9,11,13,15,17,19,21), decimals = 1) %>%
-  # add column colours
-  tab_style(style = cell_fill(color = "#44015433"),
+  # add column colours (alpha = 0.3)
+  tab_style(style = cell_fill(color = "#4401544D"),
     locations = cells_body(columns = 3)) %>%
-  tab_style(style = cell_fill(color = "#41448733"),
+  tab_style(style = cell_fill(color = "#443A834D"),
     locations = cells_body(columns = 4)) %>%
-  tab_style(style = cell_fill(color = "#2A788E33"),
-    locations = cells_body(columns = 6)) %>%  
-  tab_style(style = cell_fill(color = "#22A88433"),
+  tab_style(style = cell_fill(color = "#31688E4D"),
     locations = cells_body(columns = 5)) %>%  
-  tab_style(style = cell_fill(color = "#7AD15133"),
+  tab_style(style = cell_fill(color = "#35B7794D"),
+    locations = cells_body(columns = 6)) %>%  
+  tab_style(style = cell_fill(color = "#8FD7444D"),
     locations = cells_body(columns = 7)) %>%
-  tab_style(style = cell_fill(color = "#FDE72533"),
-    locations = cells_body(columns = 8)) %>%
-  # arrange columsn per other tables
-  cols_move(columns = 5, after = 6)
+  tab_style(style = cell_fill(color = "#FDE7254D"),
+    locations = cells_body(columns = 8))
 
 summary_stats_table
 
@@ -504,23 +583,24 @@ birds_insite <- birds_expert %>%
 
 # format for use in the package 'vegan'
 birds_vegan <- birds_expert %>%
+  arrange(site) %>%
   select(c(site, common_name, count_in)) %>%
   pivot_wider(names_from = common_name, values_from = count_in, values_fn = sum, values_fill = 0) %>%
   column_to_rownames(var = "site")
 
 # create table of sites and communities
-communities <- data.frame(site = c(1, 2, 4,
-                                   3, 5, 7,
-                                   8, 9, 10, 12,
-                                   6, 11, 13, 14, 16, 18,
-                                   15, 17, 19, 20,
-                                   21, 22, 23, 24),
-                          community = c(rep("CAS", 3),
-                                        rep("CEF", 3),
-                                        rep("P", 4),
-                                        rep("LSF", 6),
-                                        rep("RF", 4),
-                                        rep("USF", 4))) %>%
+communities <- data.frame(site = c(8, 9, 10, 12,
+                                   1, 2, 4,
+                                   3, 5, 6, 11,
+                                   7, 13, 18, 14,
+                                   22, 23, 24,
+                                   15, 16, 17, 19, 20, 21),
+                          community = c(rep("P", 4),
+                                        rep("CAS", 3),
+                                        rep("CBF", 4),
+                                        rep("SGBF-L", 4),
+                                        rep("SGBF-U", 3),
+                                        rep("RFG", 6))) %>%
   mutate(community = as_factor(community))
 
 # assign communities to bird data
@@ -552,16 +632,16 @@ summary (m1)
 
 TukeyHSD(m1)
 
+par(mar = c(5, 8, 4, 2))
 plot(TukeyHSD(m1), las = 2, cex.axis=0.75)
 ```
 
-Interesting! The upper slope forest had the highest species richness, with an average of 13 species. The paddock (unsuprisingly) had the lowest. 
+Interesting! The upper slope forest had the highest species richness, with an average of 13 species. The paddock (unsuprisingly) had the lowest. What is really interesting is that usually (in 2022-2024; mean 14 species in 2024) the rainforest has the highest bird species richness. Two reasons we have theorised for this:
 
-Note, the rainforest and the coastal forest sites were only surveyed once - which (as we know from the above section on beta diversity) will artificially deflate their overall richness compared to the sites that were visited multiple times. That means, with additional visits, the rainforest and coastal forest diversity may have been higher. Indeed, in 2024 the rainforest had the highest diversity (mean 14 species).
+1) The rainforest sites were only surveyed once in 2025, which (as we know from the above section on beta diversity) will artificially deflate their overall richness compared to the sites that were visited multiple times. That means, with additional visits, the rainforest diversity may have been higher (this also applies to the coastal sites).
+2) Rainforest plant species are increasingly found in the SGBF (see note in the vegetation community descriptions), and so 'rainforest' type birds (not necessarily specialists but ones usually associated with the rainforest gullies, such as brown cuckoo-dove) are being detected in the SGBF.
 
-There was a significant difference in richness between the community types (p = 0.006). Note: this is only testing the difference in the number of species, not the difference in their diversity.
-
-The Tukey test plot shows us the direction and strength of the pairwise differences; e.g. in the 'LSF-P' pairing, lower slope forest has many more species than paddock, and since this crosses the zero, this is a significant difference. 
+There was a significant difference in richness between the community types (p = 0.0255). Note: this is only testing the difference in the number of species, not the difference in their diversity. But this difference was driven by the difference in richness between the Upper slope forest and the paddock (only pairing that crosses zero in the Tukey test).
 
 **Please note**, you do not have to use the statistical analyses in your report unless you feel confident doing so. If not, stick to the summary data and interpretation of the tables and figures. 
 
@@ -628,7 +708,12 @@ comm_beta <- rbind(comm_beta, out)
 comm_beta_sum <- comm_beta %>% 
   mutate(community = as_factor(community)) %>%
   group_by(community) %>% 
-  summarise(unique_species = length(unique))
+  summarise(unique_species = length(unique)) %>%
+  # add zero value for CBF
+  rbind(data.frame(community = "CBF", unique_species = 0)) %>%
+# custom sort by community to match floristics table
+  mutate(community = factor(community, levels = c("P", "CAS", "CBF", "SGBF-L", "SGBF-U", "RFG"))) %>%
+  arrange(community)
 
 # plot unique birds by community
 ggplot(comm_beta_sum, aes(community, unique_species))+
@@ -685,7 +770,7 @@ Note the y-axis is limited to a minimum of 0.55 to make this easier to read.
 
 The upper slope forest had the highest average Simpson's diversity index, which means it is more biodiverse in terms of both species richness and abundance. The paddock had the lowest average Simpson's diversity index (but was higher than previous years due to the presence of duck diveristy - thanks to the rain).
 
-There was no significant in Simpson's diversity index among the communities.  
+There was no significant difference in Simpson's diversity index among the communities.  
 
 ## Bird communities
 
@@ -720,22 +805,24 @@ CCA_bird <- as.data.frame(birdCCA$CCA$v) %>%
 ggplot() +
   geom_point(data = CCA_bird, aes(x = CCA1, y = CCA2), color = "darkblue")+
   geom_text_repel(data = CCA_bird, aes(x = CCA1, y = CCA2, label = bird),
-                  nudge_y = 0.05, max.overlaps = 20) +
-  theme_minimal()
+                  nudge_y = 0.05, max.overlaps = Inf, size = 2.5) +
+  theme_minimal()+
+  scale_x_continuous(limits = c(-4, 6))+
+  scale_y_continuous(limits = c(-3, 5))
 
 ```
 
-Awesome! Let's read this figure. You can essentially ignore the axes here (arbitrary numbers in ordination space). What we are interested in is the grouping of birds. What this figure shows us is how birds cluster in the landscape according to the vegetation features (at least the ones we measured). The lines are labels for birds that are really clustered - follow the line to see the position of the dot. And it looks pretty good! 
+Awesome! Let's read this figure. You can essentially ignore the axes here (arbitrary numbers in ordination space). What we are interested in is the grouping of birds. What this figure shows us is how birds cluster in the landscape according to the vegetation features (at least the ones we measured). The lines are labels for birds that are really clustered - follow the line to see the position of the dot (apologies the font is a little small to fit it all on the graph). And it looks pretty good! 
 
 The cluster of Pacific black duck, wood duck, chestnut teal and magpie lark were found at paddock site 9. Likewise, the cluster of pipit, brown songlark, starling and welcome swallow were found at paddock site 10. These paddock clusters have different biometric features (and therefore are separate in ordination space) because 9 had lots of mud (22% cover bare ground in the tally) while site 10 had not much (only 8% mud). This makes sense for the ducks! And likewise, magpie larks are mud nest builders, so perhaps they were visiting site 9 to get mud. Masked lapwing and willie wagtail are located between these clusters because they were found at both paddock sites. 
 
 The cluster of yellow thornbill and satin bowerbird were species found in the Casuarina forest - which is far away from the other clusters in ordination space because of how different the casuarina forest is in terms of vegetation structure. Yellow thornbill is the closest thing we have to a casuarina 'specialist'.
 
-The major cluster in the middle are the forest birds. We can break this big cluster down further into subset clusters therein. Notably:
+The major cluster in the middle are the forest birds. We can see some patterns in these forest bird clusters:
 
 * Red-browed treecreeper, white-throated treecreeper and varied sitella all have the same foraging style of 'creeping' along horizontal canopy branches of big old trees with decorticating bark to look for insects. These were clustered together!
 * Eastern yellow robin, golden whistler, brown gerygone and striated thornbill were found at nearly all of our forest sites, which is why they're in the middle of the ordination. 
-* Several honeyeater species were found at similar sites: new holland, yellow-faced and eastern spinebill. Whereas lewin's honeyeater are found further out because one was recorded at paddock site 12 (out in the open on the edge of the creek), and white-naped honeyeater are clustered with the old growth specialists.
+* Several honeyeater species were found at similar sites: new holland, yellow-faced and eastern spinebill. Whereas lewin's honeyeater are found further out because one was recorded at paddock site 12 (out in the open on the edge of the creek), little wattlebird were found at the coast (and community garden, but generally a coastal specialist) and white-naped honeyeater are clustered with the old growth specialists.
 
 It is very interesting that the two fairywren species are distributed differently in ordination space - this indicates we found them in different vegetation. We saw superb fairywren in both forest and the paddocks, whereas we only saw varigated fairywrens in the forest - indicating one is more generalist and the other more specialist. 
 
@@ -779,7 +866,7 @@ In general, you underestimated the total number of species- which is to be expec
 
 **(This section is interesting but you don't have to include it in your report)**
 
-You also surveyed the sites using acoustic meters. We collected data for two hours around dusk and dawn for one night. One of the benefits of acoustic meters is they can help sample diversity that otherwise would be missed in the time constraints of a five-minute count. The other benefit was to teach you how to use this kit and read sonograms! Let's see what we detected. First we'll look at the effect of time of day.
+You also surveyed the sites using acoustic meters. We collected data for two hours around dusk and dawn for one night. One of the benefits of acoustic meters is they can help sample diversity that otherwise would be missed in the time constraints of a five-minute count. The other benefit was to teach you how to use this kit and read sonograms! Let's see what we detected. We'll start with species richness by site.
 
 ```{r}
 # read in 
@@ -801,7 +888,7 @@ ggplot(acoustic_rich)+
 
 The paddock had relatively high species richness because you can hear much further in these sites (no pesky trees blocking the sound). This is one of the drawbacks of the acoustic meters compared to the expert surveys: it's easier in the 5 minute counts to delineate birds as in or out of the site (and therefore linkable to biometric data). 
 
-For example, the Masked Lapwing heard on the acoustic meter might have been further away than 50m because their call carries. We could have tested this by playing a known volume tone at 50m from the meters to figure out how 'loud' something needs to be to be in the site.
+For example, the masked lapwings heard on the acoustic meter might have been further away than 50m because their call carries. We could have tested this by playing a known volume tone at 50m from the meters to figure out how 'loud' something needs to be to be in the site.
 
 How did the richness detected on the acoustic meters compare with the bird surveys?
 
@@ -824,7 +911,7 @@ anova(aco)
 
 ```
 
-We detected more species on the expert counts in the casuarina forest, lower and upper slope forests. There was no effect of sampling type on species richness (i.e. no significant difference between the methods for determining species richness).
+We detected more species on the acoustic meters in the paddock and rainforest. There was no effect of sampling type on species richness (i.e. no significant difference between the methods for determining species richness).
 
 A caveat here is that we simply used 'loudness' of the acoustic data as a proxy for distance, so the two aren't directly comparable. 
 
@@ -832,7 +919,7 @@ You can imagine the addition of time to a bird survey as a curve of diminishing 
 
 Another important use of acoustic meters is to detect rare things that don't call often. If you were tasked with finding a Night Parrot, you would have to spend 1000s of hours in the remote spinifex desert to potentially hear a short call; which is why agencies like Parks and NGOs such as AWC instead deploy acoustic meters and then use AI to scan through in search of the target species. 
 
-However we've only looked at species richness. How about the beta diversity between the acoustic and expert counts?
+However we've only looked at species richness. How about the beta diversity between the acoustic and expert counts? That is, how many species are only found using each method?
 
 ```{r}
 # for loop of birds only found in that community
@@ -876,7 +963,9 @@ anova(aco_b)
 
 ```
 
-There was no significant difference between the survey methods in the diversity of species detected.
+Again, more species were found by the acoustic meters in the paddock and rainforest that were not detected during the expert surveys.
+
+There was no significant difference between the survey methods in the number of unique species detected.
 
 Aside from the study sites, were there any unique species found only on the expert counts or acoustic meters across the whole campus?
 
@@ -1018,7 +1107,7 @@ ggplot(herps)+
 
 This is really an indication of the survey effort for herpetofauna! In 2018-2020 we only had tin/tile (AKA substrate) checks (which were done by students instead of expert observers) whereas in 2022 we started recording incidental sightings and doing the pond frog surveys. 
 
-We recorded two new species for ENVS2018 in 2024: spotted grass frog (*Limnodynastes tasmaniensis*). 
+We recorded one new species for ENVS2018 in 2024: spotted grass frog (*Limnodynastes tasmaniensis*). 
 
 I wonder how these results compare with the frog diversity in the pre-readings?
 
