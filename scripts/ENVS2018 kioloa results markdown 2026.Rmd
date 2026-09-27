@@ -1,0 +1,1292 @@
+---
+title: "ENVS2018 Environmental Science Field School: Kioloa analyses"
+author: "Shoshana Rapley, Saul Cunningham"
+date: "27 September 2026"
+output:
+  html_document:
+    toc: true
+    number_sections: true
+    toc_depth: 3
+    toc_float:
+      collapsed: true
+    theme: cerulean
+    highlight: pygments
+    code_folding: hide
+editor_options: 
+  chunk_output_type: console
+knit: (function(inputFile, encoding) { rmarkdown::render(inputFile, encoding = encoding, output_file = file.path(dirname(inputFile), '../results/ENVS2018 Kioloa Report Results 2026.html')) })
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(warning=FALSE, message=FALSE)
+knitr::opts_knit$set(root.dir = here::here())
+```
+
+# Background
+
+For your report, we would like you to discuss the patterns of biodiversity you observed.
+
+**In particular, you should examine the composition and structure of different plant communities at Kioloa, whether animal (especially bird) communities also differ, and consider how these patterns relate to the underlying soils and geology.**
+
+We are excited to share the whole-class survey results with you all. There are some really interesting patterns here.
+
+You can use this data summary as source material for your report. You may use the figures/graphs from this markdown in your report. You do not need to add a citation. 
+
+We are not expecting that you do further, more complex analyses (but you can if you really want).
+
+You are not required to report on every piece of data!
+
+Given that we have more than 100 species in the list and 14 habitat measures, this would dilute the message of the report.
+
+Keep your focus on the data that show patterns of interest.
+
+# Markdown
+
+This document is called a 'markdown'. It's a way to share code, annotations and results all in one place. 
+
+If you are interested in the code you can unfold the chunks by clicking the 'Show' icon.
+
+There is also an option on the top right of the document called 'Code' that allows you to show or hide all code chunks.
+
+Notes in the code itself that start with a hash # explain what the next line of code achieves.  
+
+```{r}
+# Install and load required packages
+pacman::p_load(dplyr, gdata, ggforce, ggplot2, ggrepel, gt, gtExtras, janitor, mapview, lme4, lubridate, 
+               rstudioapi, readxl, sf, sjmisc, terra, tidyr, tidyterra, tidyverse, vegan, viridis)
+```
+
+# Vegetation communities
+
+## Floral composition
+
+We have used the results of your survey of abundant plant species in the sites to describe plant communities.
+
+There are sets of sites that have some important similarities in terms of the plant species in them, especially those more abundant species that help to define the vegetation structure. 
+
+In the table, each row is a plant species and each column is a site. In the cells we have marked O (overstory) M (midstory) and G (ground layer) to show where the species occurs.
+
+To read the table:
+
+* Look at the vertical blocks of colour that highlight the different plant communities, and the darker colours that highlight the plants that characterise each community.
+
+* The box in the first rows highlights the set of species that occurred broadly across all community types except for CAS and P.
+
+* The other boxes highlight the set of species that help to characterise each plant community.
+
+* The ordering from top to bottom is arranged to make the associations clearer (to arrange the blocks) so it is not perfectly arranged into overstory, midstory, and understory. 
+
+* The functional group in the first column helps you see what kind of plant it is.
+
+```{r}
+# read in the data - skip the top row, will create this with spanner headers
+comp_data <- read_excel("data/ENVS2018 kioloa flora composition 2026.xlsx", skip = 1)
+
+# create a pretty table using the package 'gt'
+comp_table <- gt(comp_data) %>%
+  tab_options(data_row.padding = px(1)) %>%
+  # add header
+  tab_header(title = "Floral composition", 
+             subtitle = "ENVS2018 Student data Kioloa 2026") %>%
+  # replace NAs with blanks
+  tab_style(cell_text(style = "italic"),locations = cells_body(columns = 2)) %>%
+  sub_missing(missing_text = " ") %>%
+   # add column colours for community type (using a 6 colour viridis scale with a = 0.2 transparency)
+  tab_style(style = list(cell_fill(color = "#44015433")),
+            locations = cells_body(columns = 3:6)) %>%
+  tab_style(style = list(cell_fill(color = "#41448733")),
+            locations = cells_body(columns = 7:9)) %>%  
+  tab_style(style = list(cell_fill(color = "#2A788E33")),
+            locations = cells_body(columns = 10:12)) %>%
+  tab_style(style = list(cell_fill(color = "#22A88433")),
+            locations = cells_body(columns = 13:17)) %>%
+  tab_style(style = list(cell_fill(color = "#7AD15133")),
+            locations = cells_body(columns = 18:20)) %>%
+  tab_style(style = list(cell_fill(color = "#FDE72533")),
+            locations = cells_body(columns = 21:26)) %>%
+  # add row/column colours for clusters (using 6 colour viridis scale)
+  tab_style(style = list(cell_fill(color = "#440154FF"), cell_text(color = "white")),
+            locations = cells_body(columns = 3:6, rows = c(12:23))) %>%
+  tab_style(style = list(cell_fill(color = "#414487FF"), cell_text(color = "white")),
+            locations = cells_body(columns = 7:9, rows = c(5:15))) %>%  
+  tab_style(style = list(cell_fill(color = "#2A788EFF"), cell_text(color = "white")),
+            locations = cells_body(columns = 10:12, rows = c(1:4, 60:69))) %>%
+  tab_style(style = list(cell_fill(color = "#22A884FF"), cell_text(color = "white")),
+            locations = cells_body(columns = 13:17, rows = c(1:4, 22:33))) %>%
+  tab_style(style = list(cell_fill(color = "#7AD151FF"), cell_text(color = "white")),
+            locations = cells_body(columns = 18:20, rows = c(1:4, 46:59))) %>%
+  tab_style(style = list(cell_fill(color = "#FDE725FF"), cell_text(color = "black")),
+            locations = cells_body(columns = 21:26, rows = c(1:4, 31:51))) %>%
+  # add community grouping names
+  tab_spanner(label = "P", columns = 3:6) %>%
+  tab_spanner(label = "CAS", columns = 7:9) %>%
+  tab_spanner(label = "CBF", columns = 10:12) %>%
+  tab_spanner(label = "SGBF (Lower)", columns = 13:17) %>%
+  tab_spanner(label = "SGBF (Upper)", columns = 18:20) %>%
+  tab_spanner(label = "RFG", columns = 21:26) %>%
+  # add footnotes
+  tab_footnote(footnote = "fg = functional group",
+               locations = cells_column_labels(columns = 1)) %>%
+  # change font size
+  tab_style(style = cell_text(size = px(12)), locations = cells_column_labels()) %>%
+  tab_style(style = cell_text(size = px(10)), locations = cells_body()) %>%
+  tab_style(style = cell_text(size = px(11)), locations = cells_column_spanners())
+
+comp_table
+
+```
+
+When you report on the analysis remember to look at where these sites occur in relation to each other and how this relates to the underlying soil, the topography and the distance from the ocean. Also examine how the species composition relates to the structural characteristics that are described by the biometric survey.
+
+Our results are not exactly the same as the plant community classification that you might find on other sources, such as on “Trees Near Me” (https://treesnearme.app/) because we have based it on our own local survey of sites. 
+
+That is OK, because plant communities are ultimately a human construct that we use for descriptive purposes – they don’t have a strict definition that would make any one classification “correct”.
+
+## Community descriptions
+
+**P: Paddock/Grassland**
+
+This community is characterised by the absence of a midstory and a sparse or absent overstory. Site 10 had one *Eucalyptus tereticornis*, and others were seen elsewhere in the paddock though not captured in the survey sites. The ground layer has grasses, sedges rushes and some forbs, but not *Gahnia*, the large sedge that was frequent in most communities. Some of the forbs are introduced weeds. Other functional groups were reported (i.e. no trees, small trees, shrubs).
+
+**CAS: Casuarina Forest**
+
+This community has a *Casuarina glauca* overstory. It is without any other canopy tree species and is missing most of the shrubs and small trees that are common elsewhere (e.g. *Acacia* species,  *Acmena smithii*). There are also some shrub and forb species found here that were not seen in other sites. One vine species occurred here that was not reported in any other sites (*Parsonsia straminae*). No *Acacia* were reported, whereas *Acacia* were present in the midstory of all other plant communities (except the paddock).
+
+**CBF: Coastal Bangalay Forest**
+
+Defined by the presence of *Eucalyptus botryoides* (Bangalay) in the overstory, alongside *Corymbia maculata*. Another species found in these sites but not elsewhere was *Notelaea longifolia* in midstorey. Sedges and grasses were common in the ground layer. Many other species are shared with SGBFL.
+
+**SGBF: Spotted Gum/Blackbutt Forest**
+
+These sites are defined by only two dominant overstory tree species: *Corymbia maculata* (Spotted Gum) and *Eucalyptus pilularis* (Blackbutt) and the canopy is taller than CBF Midstorey often including  Acacia maidenii. Some of the mid and ground layer species are shared with the RFG sites. This community is further broken into Lower and Upper based on slope position and elevation.
+
+  **Lower slope SGBF**
+  
+The lower SGBF sites (7, 11, 13, and 18) are relatively flat and have smaller younger trees than the upper slopes (in part due to the history of logging, where the flat accessible areas were preferentially logged). Although the upper and lower slope sites have similar species composition, they have quite different biometric values. 
+
+  **Upper slope SGBF**
+  
+The upper SGBF sites (22, 23, 24) are on located on the hill slope, going up in elevation from 22 -> 23 -> 24 (which is located on the knoll). Some of these sites have some species that favour lower nutrient environments, such as the two species in the family Proteaceae (*Banksia spinulosa*, *Persoonia linearis*) and the cycad *Macrozamia communis*.The abundance and diversity of midstorey species create the highest levels of midstorey cover, along with a high density of trees. As a result, these sites are hard to walk though!
+
+**RFG: Rainforest Gully**
+
+This community has an emergent overstory of *Corymbia maculata* and *Eucalyptus pilularis* and a tall canopy. It also has a number of shorter overstory and midstory species not common in the other communities. These sites are defined by the occurrence of a diverse set of species known to occur in rain forest elsewhere in the region (*Backhousia myrtifolia*, *Diospyros australis*, *Tristaniopsis collina*, *Cryptocarya glaucescens*, *Synoum glandulosum*, *Hibbertia dentata*) and two species known to occur around watercourses (*Elaeocarpus reticulatus*, and *Sannantha pluriflora*).
+
+Some of the species characteristic of the rain forest were also reported in the Upper SBGF, but not other communities (e.g. *Livistona australis*, *Synoum glandulosum*, and Ferns). This sharing of species reflects that wet sclerophyll forests (such as SGBF) generally have an overstory of *Eucalyptus* and related trees, and an understory including some rainforest-loving species. 
+
+Plantnet notes on rainforest species distribution (https://plantnet.rbgsyd.nsw.gov.au/):
+
+- *Diospyros australis*:	Widespread in warmer rainforest; north from Batemans Bay
+- *Tristaniopsis collina*: Grows along rainforest margins and in moist situations in sclerophyll forest
+- *Synoum glandulosum*: Widespread in warmer rainforest
+- *Eupomatia laurina*: Widespread in or near warmer rainforest
+- *Hibbertia dentata*: Mainly in open forest or on margins of rainforest
+- *Clerodendrum tomentosum*: Grows in or on the margins of warmer rainforest
+- *Ficus coronata*: Often along creeks, in rainforest and open country
+- *Pittosporum revolutum*: Grows in rainforest, wet sclerophyll forest, and in dry sclerophyll forest in the south of the range
+- *Callicoma serratifolia*: Grows mainly in rainforest and on its margins
+- *Elaeocarpus reticulatus*: Mostly in gullies or along watercourses
+- *Sannantha pluriflora*: Most commonly grows in eucalypt forest close to watercourses
+
+## Biometric values
+
+Now that we have our floristic community groupings, let's take a look at the biometric data you collected.
+
+We will highlight cells for a few key variables based on their values to make it easier to see what's going on. 
+
+A few notes:
+
+* The Spotted Gum - Blackbutt forest (SGBF) is split into lower and upper (on site elevation) and you will notice they differ in their biometric values.
+* For plots where smaller areas were surveyed the tree counts and logs in m have been adjusted accordingly 
+* Data were deleted were there was evidence of inconsistent methods (i.e. systematic bias), as follows:
+    * D has consistently lower cover estimates than all other teams, regardless of habitat, and including a very low value in site 19 despite recording one of the highest tree densities. 
+    * E had consistently low tree height estimates than all other teams
+
+```{r}
+# read in data
+biometric_data <- read_excel("data/ENVS2018 kioloa biometric 2026.xlsx", na = "NA") %>%
+  # drop team column
+  select(-1) %>%
+  # custom sort by community to match floristics table
+  mutate(Community = factor(Community, levels = c("P", "CAS", "CBF", "SGBF-L", "SGBF-U", "RFG"))) %>%
+  arrange(Community)
+
+# make table in gt
+biometric_table <- gt(biometric_data) %>%
+  tab_options(data_row.padding = px(1)) %>%
+  # change font size
+  tab_style(style = cell_text(size = px(12)), locations = cells_column_labels()) %>%
+  tab_style(style = cell_text(size = px(10)), locations = cells_body()) %>%
+  # add header
+  tab_header(title = "Biometric data", 
+             subtitle = "ENVS2018 Student data Kioloa 2026") %>%
+  # format percentages and numbers
+  fmt_percent(columns = 3:14, decimals = 1) %>%
+  fmt_number(columns = 15:17, decimals = 1) %>%
+  # add data grouping labels
+  tab_spanner(label = "Percent cover (transects)", columns = 3:11) %>%
+  tab_spanner(label = "Tree cover", columns = 12:14) %>%
+  tab_spanner(label = "Features", columns = 15:17) %>%
+  tab_style(style = cell_text(size = px(14)), # Set font size to 14 pixels
+    locations = cells_column_spanners()) %>%
+  # add row colours for community type (using a 6 colour viridis scale with 0.5 transparency)
+  tab_style(style = list(cell_fill(color = "#44015480")),
+            locations = cells_body(rows = 1:4, columns = 1:2)) %>%
+  tab_style(style = list(cell_fill(color = "#41448780")),
+            locations = cells_body(rows = 5:7, columns = 1:2)) %>%  
+  tab_style(style = list(cell_fill(color = "#2A788E80")),
+            locations = cells_body(rows = 8:10, columns = 1:2)) %>%
+  tab_style(style = list(cell_fill(color = "#22A88480")),
+            locations = cells_body(rows = 11:15, columns = 1:2)) %>%
+  tab_style(style = list(cell_fill(color = "#7AD15180")),
+            locations = cells_body(rows = 16:18, columns = 1:2)) %>%
+  tab_style(style = list(cell_fill(color = "#FDE72580")),
+            locations = cells_body(rows = 19:24, columns = 1:2)) %>%
+  # colour columns according to values
+  # Grass > 40%
+  tab_style(cell_fill(color = "#F9E3D6"),
+            locations = cells_body(columns = Grass, rows = Grass > .4)) %>%
+  tab_style(cell_fill(color = "#F2F2F2"),
+            locations = cells_body(columns = Grass, rows = Grass < .4)) %>%
+  # Leaf litter > 30%
+  tab_style(cell_fill(color = "#F9E3D6"),
+            locations = cells_body(columns = Litter, rows = Litter > .3)) %>%
+  tab_style(cell_fill(color = "#F2F2F2"),
+            locations = cells_body(columns = Litter, rows = Litter < .3)) %>%
+  # midstory > 15%
+  tab_style(cell_fill(color = "#F9E3D6"),
+            locations = cells_body(columns = Midstory, rows = Midstory > .15)) %>%
+  tab_style(cell_fill(color = "#F2F2F2"),
+            locations = cells_body(columns = Midstory, rows = Midstory < .15)) %>%
+  # midstory + over > 60%
+  tab_style(cell_fill(color = "#F9E3D6"),
+            locations = cells_body(columns = Cover, rows = Cover > .6)) %>%
+  tab_style(cell_fill(color = "#F2F2F2"),
+            locations = cells_body(columns = Cover, rows = Cover < .6)) %>%
+  # CWD length > 100m 
+  tab_style(cell_fill(color = "#F9E3D6"),
+            locations = cells_body(columns = `Logs (m)`, rows = `Logs (m)` > 100)) %>%
+  tab_style(cell_fill(color = "#F2F2F2"),
+            locations = cells_body(columns = `Logs (m)`, rows = `Logs (m)` < 100)) %>%
+  # Format NA values as light yellow
+  tab_style(cell_fill(color = "lightyellow"),
+            locations = cells_body(columns = `Canopy height (m)`, rows = is.na(`Canopy height (m)`))) %>%
+  tab_style(cell_fill(color = "lightyellow"),
+            locations = cells_body(columns = 12:14, rows = rowSums(is.na(biometric_data[12:14])) > 0)) %>%
+  # add footnotes for the above
+  tab_footnote(footnote = "Highlighted grass cover > 40%",
+               locations = cells_column_labels(columns = Grass)) %>%
+  tab_footnote(footnote = "Highlighted leaf litter > 30%",
+               locations = cells_column_labels(columns = Litter)) %>%
+  tab_footnote(footnote = "Highlighted midstory cover > 15%",
+               locations = cells_column_labels(columns = Midstory)) %>%
+  tab_footnote(footnote = "Highlighted combined mid and overstory cover > 60%",
+               locations = cells_column_labels(columns = Cover)) %>%
+  tab_footnote(footnote = "Highlighted coarse woody debris where the total length > 100m",
+               locations = cells_column_labels(columns = `Logs (m)`)) %>%
+  tab_footnote(footnote = "NA values indicate data was removed in data cleaning because of systematic bias",
+               locations = cells_body(columns = 12, rows = 7))
+
+biometric_table
+
+```
+
+## Map
+
+Since you may not have visited all the sites, here is an interactive map of Kioloa. You can click on a site and see the dominant plant species and the cover percentages.
+
+You can toggle the map background to see either satellite imagery or the topographic map.
+
+```{r}
+# GPS data
+gps <- read_excel("data/KCC new and old gps.xlsx") %>%
+  clean_names() %>%
+  select(c(2,4,5)) %>%
+  rename(site = new_name)
+
+# build table of key plant species
+site_floristic <- comp_data %>%
+  select(-fg) %>%
+  pivot_longer(2:25, names_to = "site", values_to = "strata") %>%
+  mutate(site = as.numeric(site)) %>%
+  clean_names() %>%
+  mutate(strata = case_when(
+    strata == "O" ~ "Overstory species",
+    strata == "M" ~ "Midstory species",
+    strata == "O/M" ~ "Overstory species",
+    strata == "G" ~ "Ground cover species",
+    strata %in% c("G/M", "M/G") ~ "Ground cover species")) %>%
+  na.omit() %>%
+  pivot_wider(names_from = strata, values_from = species_name) %>%
+  # Collapse list-column of species into a comma-separated string
+  mutate(across(2:4, ~map_chr(.x, ~paste(trimws(.x), collapse = ", ")))) %>%
+  # Apply italics to sp names
+  mutate(across(2:4, ~paste0("<i>", .x, "</i>"))) %>%
+  # add biometric data
+  left_join(biometric_data %>%  select(c(1:2, 12:13)),
+            join_by(site == Site)) %>%
+  # format percentages
+  mutate(across(6:7, ~paste0(round(.x * 100), "%"))) %>%
+  # add geographic information
+  left_join(gps) %>%
+  vect()
+
+# map sites
+m <- mapview(site_floristic,
+             map.types = c("Esri.WorldImagery", "OpenTopoMap"),
+             layer.name = "Kioloa survey sites",
+             zcol = "Community",
+             popup = leafpop::popupTable(as.data.frame(site_floristic), feature.id = FALSE, row.numbers = FALSE))
+
+m
+```
+
+## Visualisation
+
+That's given us a good overview of how the biometric features vary by community type. Let's now summarise and visualise the data as boxplots. A boxplot shows the mean (middle line of the box), quartiles (the box and whiskers) and outliers (dots) and are useful for comparing quantitative data among groups. 
+
+There are small values for rock, bare ground, and cryptogam, so these are excluded from the plot to make the others easier to read.
+
+```{r}
+biometric_data2 <- biometric_data %>%
+  # clean names
+  clean_names() %>%
+  # convert percentages to 0-100
+  mutate(across(3:14, ~ .x * 100))
+
+# extract transect data and convert to long format for graphing
+cover <- select(biometric_data2, -c(12:16)) %>%
+  pivot_longer(cols = 3:11, names_to = "feature", values_to = "percent") %>%
+  mutate(feature = as_factor(feature))
+
+# palette
+community_palette <- c("P"      = "#440154FF", 
+                       "CAS"    = "#443A83FF",
+                       "CBF"    = "#31688EFF",
+                       "SGBF-L" = "#35B779FF",
+                       "SGBF-U" = "#8FD744FF",
+                       "RFG"    = "#FDE725FF")
+
+# filter out low value features
+cover2 <- cover %>% 
+  filter(feature %in% c("grass", "woody_plant", "forb", "litter", "log", "other"))
+
+# create box plot for cover
+ggplot(cover2) +
+  geom_boxplot(aes(community, percent, fill = community)) +
+  scale_fill_manual(values = community_palette)+
+  facet_wrap(~feature) +
+  theme_classic()+
+  labs(x = "Community", y = "Cover %")+
+  ggplot2::theme(axis.text.x=element_blank(), axis.ticks.x=element_blank())
+
+```
+
+Interesting!
+
+Now let's look at the mid and overstory cover, plus the combined mid and overstory (called in the plot 'cover'). The combined mid and overstory metric gives us an indication of how much light will get through to the forest floor (which in turn affects which plants can grow there).
+
+```{r}
+# break into tree cover data and convert to long format for graphing
+tree <- select(biometric_data2, c(1:2, 12:14)) %>%
+  pivot_longer(cols = 3:5, names_to = "feature", values_to = "percent") %>%
+  mutate(feature = as_factor(feature)) %>%
+  na.omit()
+
+# create box plot for cover
+ggplot(tree) +
+  geom_boxplot(aes(community, percent, fill = community)) +
+  scale_fill_manual(values = community_palette)+
+  facet_wrap(~feature) +
+  theme_classic()+
+  labs(x = "Community", y = "Cover %")+
+  ggplot2::theme(axis.text.x=element_blank(), axis.ticks.x=element_blank())
+```
+
+Now let's look at the count biometric data: number of trees, number of mature trees (those that potentially have hollows) and length of logs.
+
+```{r}
+# break into cover data and convert to long format for graphing
+count <- select(biometric_data2, -c(3:14)) %>%
+  pivot_longer(cols = 3:5, names_to = "feature", values_to = "count") %>%
+  mutate(feature = as_factor(feature)) %>%
+  # rename categories for facet labels
+  mutate(feature = case_when(
+    feature == "trees" ~ "Trees",
+    feature == "logs_m" ~ "Log length (m)",
+    feature == "canopy_height_m" ~ "Canopy height (m)")) %>%
+  na.omit()
+
+# create box plot for features
+ggplot(count) +
+  geom_boxplot(aes(community, count, fill = community)) +
+  scale_fill_manual(values = community_palette)+
+  facet_wrap(~feature, scales = "free") +
+  theme_classic()+
+  labs(x = "Community", y = "Feature value")+
+  ggplot2::theme(axis.text.x=element_blank(), axis.ticks.x=element_blank())
+```
+
+Great! You can use these graphs in your report. 
+
+## Summary Statistics
+
+And we'll calculate the following summary statistics for all features: mean and standard deviation.
+
+You can use these numbers in the report if needed.
+
+```{r}
+# calculate summary statistics for all features
+summary_stats <- biometric_data %>% clean_names() %>% na.omit() %>%
+  # extract values and calculate mean and sd
+  pivot_longer(cols = 3:17, names_to = "feature", values_to = "value") %>%
+  group_by(community, feature) %>%
+  summarise(mean = mean(value),
+            sd = sd(value)) %>%
+  # rearrange into wider format
+  pivot_wider(names_from = 2, values_from = 3:4) %>%
+  sjmisc::rotate_df(cn=TRUE) %>% slice(-1) %>%
+  # create columns from current row names
+  rownames_to_column() %>%
+  rename("Stat" = 1) %>%
+  separate_wider_delim(Stat, "_", names = c("Stat", "Variable"),
+                       too_many = "merge") %>%
+  # arrange in same order as biometric table
+  arrange(factor(Variable, levels = c("grass", "woody_plant", "forb", "litter", "rock", "bare", "cryptogam", "other", "midstory", "overstory", "cover", "trees", "logs_m", "canopy_height_m"))) %>%
+  # format numbers
+  mutate_at(c(3:8), as.numeric)
+
+# present in gt
+summary_stats_table <- gt(summary_stats) %>%
+  tab_options(data_row.padding = px(1)) %>%
+  # change font size
+  tab_style(style = cell_text(size = px(12)), locations = cells_column_labels()) %>%
+  tab_style(style = cell_text(size = px(10)), locations = cells_body()) %>%
+  # add header
+  tab_header(title = "Biometric data summary statistics", 
+             subtitle = "ENVS2018 Student data Kioloa 2026") %>%
+  # drop trailing zeros
+  fmt_number(drop_trailing_zeros = TRUE) %>%
+  # format percentages to display %
+  fmt_percent(rows = c(1,3,5,7,9,11,13,15,17,19,21), decimals = 1) %>%
+  # add column colours (alpha = 0.3)
+  tab_style(style = cell_fill(color = "#4401544D"),
+    locations = cells_body(columns = 3)) %>%
+  tab_style(style = cell_fill(color = "#443A834D"),
+    locations = cells_body(columns = 4)) %>%
+  tab_style(style = cell_fill(color = "#31688E4D"),
+    locations = cells_body(columns = 5)) %>%  
+  tab_style(style = cell_fill(color = "#35B7794D"),
+    locations = cells_body(columns = 6)) %>%  
+  tab_style(style = cell_fill(color = "#8FD7444D"),
+    locations = cells_body(columns = 7)) %>%
+  tab_style(style = cell_fill(color = "#FDE7254D"),
+    locations = cells_body(columns = 8))
+
+summary_stats_table
+
+```
+
+# Bird surveys
+
+We conducted expert bird surveys at all sites.
+
+These data are the best quality wildlife data for your reports and we recommend linking the bird observations to the biometric data.
+
+The observer (Sho, Julian or Luke) recorded all birds seen and heard in a five-minute period in the following distance categories: <25m, 25-50m, 50-100m, >100m and overhead.
+
+## Site visits
+
+Let's start by visualising and summarising the data to get our heads around it.
+
+Every site is surveyed twice, by a different observer each time and in a different order (i.e. sites surveyed last on the first day are surveyed first on the second day).
+
+```{r}
+# read in the data and clean names 
+birds_expert <- read_excel("data/ENVS2018 kioloa bird data 2026.xlsx", sheet = 1) %>%
+  clean_names() %>%
+  # format numbers (this will convert the "no data" text strings to NAs)
+  mutate_at(c(8:14), as.numeric) %>%
+  # replace NAs with zeros
+  replace(is.na(.), 0) %>%
+  # sum counts by species for inside (0-50m) and outside (50+m) the site, and total
+  rowwise() %>%
+  mutate(count_in = sum(x25 + x25_50),
+         count_out = sum(x50_100 + x100 + overhead),
+         count_total = sum(count_in + count_out)) %>%
+  select(!c(8:12)) %>%
+  mutate(present_in = ifelse(count_in>0, 1, 0),
+         present_out = ifelse(count_out>0, 1, 0),
+         present_total = ifelse(count_total>0, 1, 0))
+
+# summarise by site for richness
+birds_richness <- birds_expert %>% group_by(site, visit) %>%
+  mutate(visit = as.factor(visit)) %>%
+  summarise(richness_in = sum(present_in>0),
+            richness_out = sum(present_out>0),
+            richness_total = sum(present_total>0)) %>%
+  arrange(site)
+
+# plot site visits
+ggplot(birds_richness)+
+  geom_line(aes(factor(site), richness_total)) +
+  geom_point(aes(factor(site), richness_total, colour = visit, shape = visit),
+             size = 4) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle=45)) +
+  xlab("Site")+
+  ylab("Species richness (total)") +
+  scale_colour_viridis_d(option = "inferno", begin = 0.2, end = 0.7)
+
+# calculate differences
+birds_alpha <- birds_richness %>% group_by(site) %>%
+  mutate(diff = abs(richness_total - lag(richness_total))) %>%
+  na.omit()
+
+alpha_diff <- data.frame(mean = mean(birds_alpha$diff),
+           min = min(birds_alpha$diff),
+           max = max(birds_alpha$diff),
+           stdev = sd(birds_alpha$diff))
+```
+
+The difference in species richness between visits (the survey repeats) was on average 4.7 bird species (with a min of 0, a max of 11 and standard deviation of 3.2). 
+
+**How about the difference in species composition (i.e. the beta diversity) detected between each visit?**
+
+We need to determine which species are 'common' to visits (not common species in the sense of rarity, but common in that they were recorded at both survey) and which species were only recorded at one visit. Species recorded at one visit and not another contribute to beta diversity.
+
+```{r}
+# take species list and determine species common to all lists (alpha) and those different between visits (beta)
+birds_beta <- birds_expert %>%
+  group_by(site, common_name) %>%
+  summarise(visit_count = n_distinct(visit), .groups = "drop") %>%
+  group_by(site) %>%
+  summarise(
+    total_species = n_distinct(common_name),
+    common_species = sum(visit_count >= 2),
+    beta = total_species - common_species,
+    .groups = "drop"
+  )
+
+beta_diff <- birds_beta %>%
+  summarise(
+    mean = mean(beta),
+    min = min(beta),
+    max = max(beta),
+    stdev = sd(beta)
+  )
+
+bind_rows(alpha_diff, beta_diff) %>%
+  add_column(type = c("alpha", "beta"), .before = "mean")
+```
+
+The difference in species composition recorded between visits (the beta diversity) was triple (!) the difference in species richness (the alpha diversity).
+
+There was always differences in the species composition between visits (the minimum was 8) and the mean beta diversity was 14.
+
+This is part of why we do repeat visits to site- to capture the diversity. Different mornings with different conditions yield different birds: each survey is a snapshot in time.
+
+Visits may differ by time of day (e.g. 6am or 7am) or weather. Plus, observers can differ in their likelihood of picking up certain species. Individual birders may miss species that are quiet or high pitched.
+
+## Species richness
+
+From here on we will use the total richness detected (i.e. total number of unique species across all visits).
+
+We will just do this for birds 'in' the site (i.e. within 50m, since then we can link these data with the vegetation).
+
+Birds recorded outside of the 50m area may be unrelated to the vegetation data you collected because the biometric plot had a maximum length of 50m. 
+
+```{r}
+# filter to birds within 50m
+birds_insite <- birds_expert %>% 
+  filter(present_in>0) %>%
+  group_by(site) %>%
+  summarise(richness = length(unique(common_name)))
+
+# format for use in the package 'vegan'
+birds_vegan <- birds_expert %>%
+  arrange(site) %>%
+  select(c(site, common_name, count_in)) %>%
+  pivot_wider(names_from = common_name, values_from = count_in, values_fn = sum, values_fill = 0) %>%
+  column_to_rownames(var = "site")
+
+# create table of sites and communities
+communities <- data.frame(site = c(8, 9, 10, 12,
+                                   4, 1, 2,
+                                   5, 6, 3,
+                                   11, 7, 13, 14, 18,
+                                   22, 23, 24,
+                                   20, 15, 16, 17, 19, 21),
+                          community = c(rep("P", 4),
+                                        rep("CAS", 3),
+                                        rep("CBF", 3),
+                                        rep("SGBF-L", 5),
+                                        rep("SGBF-U", 3),
+                                        rep("RFG", 6))) %>%
+  mutate(community = as_factor(community))
+
+# assign communities to bird data
+birds_insite2 <- left_join(communities, birds_insite) %>%
+  mutate(community = as_factor(community)) %>%
+  arrange(community)
+
+# set the plots in the right order for plotting
+birds_insite2$site <- factor(birds_insite2$site, levels = birds_insite2$site)
+
+# plot by community
+ggplot(birds_insite2) +
+  geom_boxplot(aes(community, richness, fill = community))+
+  scale_fill_viridis_d()+
+  theme_minimal()
+
+# summary statistics
+birds_summary <- birds_insite2 %>% group_by(community) %>%
+  summarise(mean_richness = mean(richness),
+            stdev = sd(richness))
+
+print(birds_summary)
+
+```
+
+Interesting! The upper slope forest had the highest species richness, with an average of 14 species. The paddock (unsuprisingly) had the lowest.
+
+Here we'll investigate these differences with statistics. 
+
+⚠️ **Please note**, you do not have to use the statistical analyses in your report unless you feel confident doing so. If not, stick to the summary data and interpretation of the tables and figures. We are not grading you on your use of statistics, we are grading you on your interpretation of the data.
+
+```{r}
+# test if there is a difference in richness by community
+richness_aov <- aov(richness ~ community,
+         data = birds_insite2)
+summary (richness_aov)
+```
+
+There was a significant difference in richness between the community types (p = < 0.001). Note: this is only testing the difference in the number of species, not the difference in their composition.
+
+The Tukey test plot shows pairwise comparisons between all the communities. In the plot, any difference trend that crosses the dotted zero line is NOT significantly different. 
+
+```{r}
+par(mar = c(5, 8, 4, 2)) # set plot margins
+plot(TukeyHSD(richness_aov), las = 2, cex.axis=0.75)
+```
+
+The paddock had significantly lower richness than all other sites except for the casuarina forest.
+
+The casuarina forest had significantly lower richnes than the Spotted Gum - Blackbutt forest and the rainforest.
+
+## Beta diversity
+
+But richness doesn't tell us everything.
+
+**What is the beta diversity of bird species between the sites?**
+
+```{r}
+# select all birds in sites
+species <- birds_expert %>%
+  filter(present_in==1) %>%
+  # add community
+  left_join(communities)
+
+# for loop of birds only found in that site
+sites_beta <- data.frame()
+sites <- unique(birds_expert$site)
+
+for (i in 1:24) {
+site_test <- species %>% filter(site == sites[i])
+site_other <- species %>% filter(!site == sites[i])
+
+diff_site <- setdiff(site_test$common_name, site_other$common_name)
+
+if(length(diff_site) == 0){ 
+  next 
+  }
+out <- data.frame(site = sites[i], unique = diff_site)
+sites_beta <- rbind(sites_beta, out)
+}
+
+print(sites_beta)
+
+```
+
+Cool. Almost half of the sites had at least one unique bird species found no where else.
+
+Notably, Site 19 had large-billed scrubwren, a rainforest specialist bird recorded here for the first time in 2026
+
+Some sites had multiple unique species:
+
+* Site 5 had New Holland Honeyeater & Red-browed Finch
+* Site 22 had  Olive-backed Oriole & Wonga Pigeon
+
+**What is the beta diversity of bird species between the communities?**
+
+```{r}
+# for loop of birds only found in that community
+comm_beta <- data.frame()
+comm <- as.character(unique(communities$community))
+
+for (i in 1:6) {
+comm_test <- species %>% filter(community == comm[i])
+comm_other <- species %>% filter(!community == comm[i])
+
+diff_comm <- setdiff(comm_test$common_name, comm_other$common_name)
+
+if(length(diff_comm) == 0){ 
+  next 
+  }
+out <- data.frame(community = comm[i], unique = diff_comm)
+comm_beta <- rbind(comm_beta, out)
+}
+
+# summarise unique birds
+comm_beta_sum <- comm_beta %>% 
+  mutate(community = as_factor(community)) %>%
+  group_by(community) %>% 
+  summarise(unique_species = length(unique)) %>%
+  # add zero value for CBF
+  rbind(data.frame(community = "CBF", unique_species = 0)) %>%
+# custom sort by community to match floristics table
+  mutate(community = factor(community, levels = c("P", "CAS", "CBF", "SGBF-L", "SGBF-U", "RFG"))) %>%
+  arrange(community)
+
+# plot unique birds by community
+ggplot(comm_beta_sum, aes(community, unique_species))+
+  geom_bar(aes(fill = community), stat = "identity")+
+  geom_text(aes(label = unique_species), vjust=1.6, color="white", size = 4)+
+  scale_fill_viridis_d()+
+  theme_minimal()
+
+# print the unique birds
+print(comm_beta)
+
+```
+
+Very cool! There were a total of 17 bird species only found in one community type. The paddock had the greatest number of unique species (n = 5). 
+
+Despite the apparent 'lack' of 'habitat' in the paddocks, there are a number of birds that are found in the paddock and nowhere else. Different birds have different requirements, some of which include open grassland areas and some are resilient to degraded landscapes. For example, the Australasian Pipit is a grassland insectivore that is mostly usually on the ground in open pasture or native grassland. It nests on the ground in tussocks.
+
+You might want to look into the ecology of these habitat specialist species for your report.
+
+## Diversity indices
+
+We can also calculate indices for diversity aside from richness. For instance, Simpsons's diversity index takes into account abundance as well as richness. Why do we care about abundance? Some species are not evenly distributed in the landscape, even if they are found in more than one place. This metric helps us take that into account.
+
+```{r}
+# calculate simpson's diversity index for each site
+communities <- communities %>%
+  mutate(site = as.character(site))
+
+simpson <- as.data.frame(diversity(birds_vegan, index = "simpson")) %>%
+  rownames_to_column() %>%
+  rename(site = 1,
+         simpsons = 2) %>%
+  left_join(communities)
+
+# plot simpsons by community
+ggplot(simpson) +
+  geom_boxplot(aes(community, simpsons, fill = community))+
+  scale_fill_viridis_d()+
+  theme_minimal() +
+  theme(axis.text.x = element_blank())+
+  ylim(c(0.6, 1))
+```
+
+Note the y-axis is limited to a minimum of 0.6 to make this easier to read. 
+
+The upper slope forest had the highest average Simpson's diversity index, which means it is more biodiverse in terms of both species richness and abundance.
+
+## Bird communities
+
+So far we have looked at the bird richness by the floristic communities. But what about the bird communities? That is, which species tend to be together due to shared habitat features they prefer (or avoid). 
+
+**Here we directly link the bird data with the biometric data you collected. However you do not have to use these results in your report.**
+
+We'll use a constrained ordination to determine bird communities.
+
+An ordination examines communities across space and a constrained ordination examines communities across specific environmental variables (in our case, biometric data).
+
+The type we are doing is called 'Canonical Correspondence Analysis' (CCA). 
+
+This analysis can't handle NA values so we will drop sites 4 and 19 which have NA values for canopy cover.
+
+```{r}
+# format biometric so rownames are site numbers 
+biometric_data3 <- biometric_data2 %>%
+  arrange(site) %>%
+  column_to_rownames(var = "site") %>%
+  # drop 4 and 19
+  slice(-c(4,19))
+
+# drop 4 and 19 from birds
+birds_vegan2 <- birds_vegan %>% slice(-c(4,19))
+
+# CCA - note can't use any variables with NAs
+birdCCA <- cca(birds_vegan2 ~ grass + woody_plant + forb + litter + rock + 
+                 log + cryptogam + other + cover, data = biometric_data3)
+
+# extract CCA1 species scores, order for plotting
+cca_scores <- scores(birdCCA, display = "species", choices = 1) %>% 
+  as.data.frame() %>% 
+  rownames_to_column("species") %>% 
+  arrange(CCA1) %>% 
+  mutate(species = factor(species, levels = species))
+
+ggplot(cca_scores, aes(x = CCA1, y = species)) +
+  geom_point() +
+  theme_minimal() +
+  labs(x = "CCA1", y = NULL)
+```
+
+CCA1 is a single number that summarises where each bird species sits along the pattern of vegetation across our sites. Think of it as a line running through the landscape, from "simple vegetation" at one end to "complex vegetation" at the other. Every species gets a position (a score) somewhere along that line, based on the vegetation at the sites where it was found.
+
+```{r}
+# environmental variable scores on the constrained axes
+scores(birdCCA, display = "bp", choices = 1)
+```
+
+Species with negative scores are associated with simple vegetation: high grass cover and low canopy cover. Species with positive scores are associated with complex vegetation: dense litter, canopy cover, and woody vegetation. Species with scores near zero don't strongly favour either end, and likely use a mix of habitat structures.
+
+Remember this is only includes the birds recorded inside the 50m vegetation sites, not all birds recorded on the surveys.
+
+CCA1 alone can only spread species out along a single line, which makes it hard to see how species group together. So we add a second axis, CCA2, which captures the next-strongest pattern of vegetation change.
+
+Plotting CCA1 and CCA2 together gives us a two-dimensional map, letting us see clusters of species with similar habitat associations.
+
+```{r}
+# set seed for cluster
+set.seed(4938)
+
+# extracting the bird community data
+CCA_bird <- as.data.frame(birdCCA$CCA$v) %>%
+  rownames_to_column()%>%
+  rename(bird = rowname) %>%
+  # calculate clusters of communities (pick number of centers to suit)
+   mutate(cluster = as.factor(kmeans(select(., CCA1, CCA2), centers = 5)$cluster))
+
+# plot
+ggplot() +
+  geom_mark_hull(data = CCA_bird, aes(x = CCA1, y = CCA2, fill = cluster),
+                  alpha = 0.4, expand = unit(3, "mm")) +
+  geom_point(data = CCA_bird, aes(x = CCA1, y = CCA2), color = "black") +
+  geom_text_repel(data = CCA_bird, aes(x = CCA1, y = CCA2, label = bird),
+                   nudge_y = 0.05, max.overlaps = Inf, size = 2.5) +
+  theme_minimal() +
+  scale_fill_manual(values = c("#33BBEE", "#BBBBBB", "#EE3377", "#EE7733", "#332288")) +
+  # extend x axis to make labels easier to read
+  scale_x_continuous(limits = c(-6, 5))
+```
+
+Awesome! For this figure, don't worry about the actual numbers on the axes; they're arbitrary and don't mean anything on their own. What matters is which species sit close together.
+
+Species near each other on the map tend to be found at similar sites, and are therefore likely to respond to vegetation in similar ways.
+
+Where points are too crowded to fit a label, the label is placed nearby with a line pointing to its point.
+
+**Understanding the clusters:**
+
+**Clusters 1–3** (pink, grey, blue) include birds from forest and rainforest sites.
+
+These clusters don't map neatly onto our vegetation communities because many of these species are generalists found across a range of vegetation types.
+
+That said, cluster 2 (grey) leans toward species that prefer wetter forest (Superb Lyrebird, Lewin's Honeyeater, Brown Cuckoo-Dove), while cluster 3 (pink) leans toward species that prefer drier forest (Rufous Whistler, fairywrens, New Holland Honeyeater).
+
+**Cluster 4** (orange) contains birds found in casuarina forest, notably the Yellow Thornbill, which favours this habitat.
+
+**Cluster 5** (purple) contains grassland birds found at paddock sites, notably the Pipit (discussed earlier under Beta Diversity).
+
+
+```{r}
+# test which constrained axes are significant
+anova.cca(birdCCA, by = "axis")
+```
+
+We tested whether this pattern is likely to be real rather than due to chance, and it came back significant (p = 0.033). That means CCA1 reflects a genuine link between vegetation and which birds are present.
+
+# Other  results
+
+⚠️**The following sections are interesting but you don't have to include them in your report.**
+
+## Soil
+
+Some groups took the opportunity to collect some soil data (thank you Dugongs, Goannas, and Honeybees).
+
+The table summarises the soil results for the 7 sites where soil data were collected. 
+
+You can use this in your report if you find it helpful, but you are not obliged to.
+
+```{r}
+# read in the data
+soil_data <- read_excel("data/ENVS2018 kioloa soil data 2026.xlsx") %>%
+  # drop columns of condensed repeat data
+  select(!c(4, 8, 12))
+
+# create a pretty table using the package 'gt'
+soil_table <- gt(soil_data) %>%
+  tab_options(data_row.padding = px(1)) %>%
+  # add header
+  tab_header(title = "Soil", 
+             subtitle = "ENVS2018 Student data Kioloa 2026") %>%
+  # change font size
+  tab_style(style = cell_text(size = px(12)), locations = cells_column_labels()) %>%
+  tab_style(style = cell_text(size = px(11)), locations = cells_body()) %>%
+  # add test grouping names
+  tab_spanner(label = "Gravel", columns = 4:6) %>%
+  tab_spanner(label = "Ped Structure", columns = 7:9) %>%
+  tab_spanner(label = "Stability", columns = 10:11) %>%
+  # colour columns according to values
+  # pH
+  tab_style(cell_fill(color = "#b6d66b"),
+            locations = cells_body(columns = pH, rows = pH == 6)) %>%
+  tab_style(cell_fill(color = "#8ac274"),
+            locations = cells_body(columns = pH, rows = pH == 7)) %>%
+  tab_style(cell_fill(color = "#ded276"),
+            locations = cells_body(columns = pH, rows = pH == 4))
+
+
+soil_table
+```
+
+## Acoustic data
+
+We collected data for two hours around dusk and dawn for one night and one morning.
+
+One of the benefits of acoustic meters is they can help sample diversity that otherwise would be missed in the time constraints of a five-minute count.
+
+The other benefit was to teach you how to use this kit and read sonograms! Let's see what we detected.
+
+We'll start with species richness by site.
+
+```{r}
+# read in 
+acoustic <- read_excel("data/ENVS2018 kioloa acoustic data 2026.xlsx", sheet = 1) %>%
+  clean_names() %>%
+  mutate(site = as.character(site))
+
+acoustic_rich <- acoustic %>% group_by(site) %>%
+  summarise(richness = length(unique(common_name))) %>%
+  left_join(communities) %>%
+  mutate(type = "acoustic")
+
+# plot by site
+ggplot(acoustic_rich)+
+  geom_boxplot(aes(community, richness, fill = community))+
+  scale_fill_viridis_d()+
+  theme_minimal()
+```
+
+The paddock had relatively high species richness because you can hear much further in these sites (no pesky trees blocking the sound).
+
+This is one of the drawbacks of the acoustic meters compared to the expert surveys: it's easier in the 5 minute counts to delineate birds as in or out of the site (and therefore linkable to biometric data). 
+
+For example, the masked lapwings heard on the acoustic meter might have been further away than 50m because their call carries.
+
+We could have tested this by playing a known volume tone at 50m from the meters to figure out how 'loud' something needs to be to be in the site.
+
+**How did the richness detected on the acoustic meters compare with the bird surveys INSIDE THE SITE?**
+
+```{r}
+# combine acoustic and expert bird counts
+acoustic_compare <- birds_insite %>%
+  mutate(site = as.character(site)) %>%
+  left_join(communities) %>%
+  mutate(type = "expert") %>%
+  full_join(acoustic_rich)
+
+# plot comparison
+ggplot(acoustic_compare) +
+  geom_boxplot(aes(type, richness, fill = community))+
+  scale_fill_viridis_d()+
+  facet_wrap(~community)+
+  theme_minimal()
+```
+
+The acoustic meters recorded more species than the expert observers. This was especially true in the paddock, casuarina and coastal bangalay communities.
+
+```{r}
+# test difference
+anova(aov(richness ~ type, data = acoustic_compare))
+```
+
+When tested with an anova, this result was significant.
+
+A caveat here is that we simply used 'loudness' of the acoustic data as a proxy for distance, so the two aren't directly comparable. 
+
+Plus the acoustic meters listened for 4 hours - compared to the grand total of 10 minutes of expert surveys at each site.
+
+What about if we look at ALL species detected by the experts? Not just those inside the 50m sites.
+
+**How did the richness detected on the acoustic meters compare with the bird surveys INSIDE AND OUTSIDE THE SITE?**
+
+```{r}
+# expert count summary
+birds_all <- birds_expert %>%
+  group_by(site) %>%
+  mutate(site = as.character(site)) %>%
+  summarise(richness = length(unique(common_name))) %>%
+  left_join(communities) %>%
+  mutate(community = as_factor(community)) %>%
+  arrange(community)
+
+# combine acoustic and expert bird counts
+acoustic_compare2 <- birds_all %>%
+  mutate(site = as.character(site)) %>%
+  left_join(communities) %>%
+  mutate(type = "expert") %>%
+  full_join(acoustic_rich)
+
+# plot comparison
+ggplot(acoustic_compare2) +
+  geom_boxplot(aes(type, richness, fill = community))+
+  scale_fill_viridis_d()+
+  facet_wrap(~community)+
+  theme_minimal()
+
+```
+
+Includes species detected inside and outside the 50m sites, the expert observers detected more species than the acoustic recorders. This was true across all sites.
+
+```{r}
+# test difference
+anova(aov(richness ~ type, data = acoustic_compare2))
+```
+
+Again this result was significant.
+
+**Were there any unique species found only on the expert counts or acoustic meters?**
+
+```{r}
+b_exp <- setdiff(species$common_name, acoustic$common_name) %>%
+  as.data.frame() %>%
+  rename(unique = 1) %>%
+  mutate(source = "expert")
+
+b_aco <- setdiff(acoustic$common_name, species$common_name)%>%
+  as.data.frame() %>%
+  rename(unique = 1) %>%
+  mutate(source = "acoustic")
+
+rbind(b_exp, b_aco)
+```
+
+Many of these species were detected during the bird surveys but not within the site itself (i.e. heard at a distance instead of within 50m).
+
+For example, we heard Little Lorikeet and Rose Robin during the expert counts but not in the sites.
+
+This may be an indication that the acoustic meters are hearing "too far".
+
+Let's sum up the total richness of birds recorded across the whole campus from both methods.
+
+We detected a total of 78 bird species. Of these, 52 were detected on both the acoustic meters and in the bird surveys, where 20 were only detected on the expert counts and 6 in the acoustic.
+
+```{r}
+# all bird species 
+species_expert <- data.frame(species = unique(birds_expert$common_name),
+                             type = "expert")
+species_acoustic <- data.frame(species = unique(acoustic$common_name),
+                             type = "acoustic")
+
+species_all <- rbind(species_expert, species_acoustic) %>%
+  mutate(type = ifelse(duplicated2(species, bothWays=TRUE)==TRUE,"both",type)) %>%
+  distinct()
+
+# make gt table
+species_all %>% 
+  group_by(type) %>% 
+  gt() %>%
+  tab_options(data_row.padding = px(1)) %>%
+  # change font size
+  tab_style(style = cell_text(size = px(12)), locations = cells_column_labels()) %>%
+  tab_style(style = cell_text(size = px(10)), locations = cells_body())
+  
+species_all_summary <- species_all %>%
+  group_by(type) %>%
+  summarise(count = length(species))
+```
+
+## Mammals (camera trap surveys)
+
+Let's have a look at how our camera results compared with previous years. 
+
+```{r}
+# groups
+mammals <- c("Eastern Grey Kangaroo", "Swamp Wallaby", "Red-necked Wallaby", 
+             "Short-beaked Echidna", "Common Wombat", "Macropod sp",
+             "Brush-tailed Possum", "Krefft's Glider", "Lesser Long-eared Bat",
+             "Black Rat", "Bush Rat", "Rat sp", "Swamp Rat", "House Mouse",
+             "Long-nosed Bandicoot", "White-footed Dunnart", "Brown Antechinus",
+             "Cat", "Red Fox", "Pig" , "Sheep", "Cow")
+
+# read in data and filter to mammals
+camera <- read_excel("data/ENVS2018 kioloa data MASTERSHEET.xlsx", sheet = "Cameras") %>%
+  clean_names() %>%
+  distinct() %>%
+  filter(common_name %in% mammals)
+
+# plot mammals
+ggplot(camera)+
+  geom_point(aes(year, common_name, colour = common_name), size = 4)+
+  scale_colour_viridis_d()+
+  theme_minimal()+
+  theme(legend.position= "none")+
+  theme(axis.title.y=element_blank())+
+  scale_y_discrete(limits=rev)+
+  scale_x_continuous(n.breaks = 7)+
+  coord_fixed(ratio = 0.6)
+
+```
+
+Here we can see which species were seen in which years. The occurrence of these species might relate to environmental conditions (e.g. drought). Note: the cameras were not placed in rainforest and coastal locations in 2017-2020, only upper and lower slope eucalypt forest and paddock. Also note there was a bushfire in the 2019/2020 Summer. No data was collected in 2021 (covid-19). 
+
+## Herpetofauna
+
+Let's do the same thing with the reptiles and frogs (from tin/tile and opportunistic records).
+
+```{r}
+# read in data
+herpsp <- c("Eastern Small-eyed Snake", "Red-bellied Black Snake", 
+            "Eastern Brown Snake", "Diamond Python",
+            "Jacky Dragon", "Blue-tongued Lizard", "Delicate Sun-skink", 
+            "Weasel Skink", "Skink sp", "Lace Monitor",
+            "Whistling Tree Frog", "Jervis Bay Tree Frog",
+            "Peron's Tree Frog", "Blue Mountains Tree Frog", 
+            "Eastern Dwarf Tree Frog", "Southern Green Stream Frog",
+            "Screaming Tree Frog", "Striped Marsh Frog", "Spotted Marsh Frog",
+            "Tyler's Toadlet", "Common Eastern Froglet", "Haswell's Froglet")
+
+herps <- read_excel("data/ENVS2018 kioloa data MASTERSHEET.xlsx", sheet = "Herpetofauna") %>%
+  clean_names() %>%
+  select(2:3) %>%
+  distinct() %>%
+  mutate(common_name = factor(common_name, levels = herpsp))
+
+# plot
+ggplot(herps)+ 
+  geom_point(aes(year, common_name, colour = common_name), size = 4)+
+  scale_colour_viridis_d()+
+  theme_minimal()+
+  theme(legend.position= "none")+
+  theme(axis.title.y=element_blank())+
+  scale_y_discrete(limits=rev)+
+  scale_x_continuous(n.breaks = 7)+
+  coord_fixed(ratio = 0.6)
+
+```
+
+This is really an indication of the survey effort for herpetofauna! In 2018-2020 we only had tin/tile (AKA substrate) checks (which were done by students instead of expert observers) whereas in 2022 we started recording incidental sightings and doing the pond frog surveys. 
+
+We recorded one new species for ENVS2018 in 2026: Eastern Brown Snake (a shed skin was found in Paddock Site 8). 
+
+I wonder how these results compare with the frog diversity in the pre-readings?
+
+## Student estimates of bird richness
+
+How well did you do at estimating the bird richness at each site? Let's compare average expert and student counts. These are total (i.e. all within 50m and >50m). 
+
+```{r}
+# read in data
+birds_student <- read_excel("data/ENVS2018 kioloa bird data 2026.xlsx", sheet = 2) %>%
+  clean_names() %>%
+  select(c(site, estimate)) %>%
+  rename(count = estimate) %>%
+  mutate(type = "student")
+
+# combine expert and student
+birds_compare <- birds_richness %>% 
+  ungroup() %>%
+  select(c(site, richness_total)) %>%
+  rename(count = richness_total) %>%
+  mutate(type = "expert") %>%
+  rbind(birds_student) %>%
+  # site as character
+  mutate(site = as.character(site))
+  
+# plot expert and student
+ggplot(birds_compare)+
+  geom_boxplot(aes(type, count, fill = type), alpha = .8) +
+  theme_minimal()+
+  theme(axis.text.x = element_text(angle=45))+
+  xlab("Surveyor type")+
+  ylab("Count or estimate of species across all sites")
+
+# plot expert and student by site
+ggplot(birds_compare) +
+  geom_boxplot(aes(site, count, fill = type), width = 0.6)+
+  theme_minimal()+
+  xlab("Site")+
+  ylab("Species richness")
+
+```
+
+In general, you underestimated the total number of species- which is to be expected! It takes a lot of practice and patience to learn bird calls. I hope you enjoyed coming out on the bird surveys with us and I appreciated your enthusiasm and quick learning.
+
+## Birds over time
+
+Lastly, let's look at how the bird diversity has changed over the years (remember you do not need to include this in your report). 
+
+Note: the casuarina forest and rainforest sites were added in 2022. 
+
+```{r}
+# read in name changes
+site_names <- read_excel("data/KCC new and old gps.xlsx") %>%
+  select(1:2) %>%
+  rename(old_name = 1,
+         new_name = 2)
+
+# vector of old site names
+old <- unique(site_names$old_name)
+
+# vector of new site names
+new <- 1:24
+
+# read in bird data since 2017
+birds_years <- read_excel("data/ENVS2018 kioloa data MASTERSHEET.xlsx", sheet = "Birds") %>%
+  clean_names() %>%
+  rename(old_name = site) %>%
+  left_join(site_names) %>%
+  # rename sites to be consistent with new names
+  mutate(site = ifelse(old_name %in% old, new_name, old_name)) %>%
+  # remove birds outside of survey points
+  filter(radius == "0-50") %>%
+  select(c(site, year, species)) %>%
+  # filter to remove sites no longer surveyed
+  filter(site %in% new)
+
+# summarise by year and site
+birds_year_sum <- birds_years %>% group_by(year, site) %>%
+  summarise(count = length(unique(species))) %>%
+  mutate(year = as.factor(year),
+         site = as.factor(site)) %>%
+  arrange(site)
+
+# plot by year
+ggplot(birds_year_sum)+
+  geom_boxplot(aes(year, count, group=year, fill = year))+
+  scale_fill_viridis_d()+
+  theme_minimal()
+
+```
+
+And over the years between sites.
+
+```{r}
+# plot by site
+ggplot(birds_year_sum)+
+  geom_point(aes(year, count, colour = site))+
+  geom_line(aes(year, count, group = site, colour = site))+
+  scale_colour_viridis_d()+
+  theme_minimal()
+```
+
+And lastly, some summary data
+
+```{r}
+#summary
+birds_year_sum %>%
+  group_by(year) %>%
+  summarise(mean = mean(count),
+            max = max(count),
+            min = min(count),
+            sd = sd(count)) %>% 
+  gt() %>%
+  tab_style(style = cell_text(size = px(12)), locations = cells_body())
+```
+
+I hope you enjoyed reading this data summary. Good luck with the report writing!
